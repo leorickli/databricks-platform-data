@@ -5,7 +5,7 @@ Idempotent setup task. Run once per environment after acme_smartnode_pipeline ha
 produced at least one day of gold rows. Re-run whenever energyassets are added.
 
 A Smartnode energyasset corresponds to a Building containing an EConnection and
-(optionally) a PVInstallation. ESDL-aligned gold splits the single API entity
+(optionally) a PVInstallation. normalized gold splits the single API entity
 into two facts and two dims, so this task emits TWO connection_config rows per
 energyasset — one for the EConnection (grid import/export) and one for the
 PVInstallation (PV production). The PV connection's data will simply stay empty
@@ -84,7 +84,7 @@ print(f"✓ {CATALOG_NAME}.views.smartnode_pvinstallation_hourly created/replace
 
 # COMMAND ----------
 
-# DBTITLE 1,Read latest inventory from both ESDL dims
+# DBTITLE 1,Read latest inventory from both dims
 econnections_df = spark.sql(f"""
     SELECT sk_econnection, account_id, energyasset_id
     FROM (
@@ -117,7 +117,7 @@ print(f"Found {len(econnections)} EConnection(s) and {len(pvinstallations)} PVIn
 
 # COMMAND ----------
 
-# DBTITLE 1,Build connection_config rows (one per ESDL asset)
+# DBTITLE 1,Build connection_config rows (one per asset)
 now = datetime.now(timezone.utc)
 config_rows = []
 

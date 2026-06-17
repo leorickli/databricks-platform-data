@@ -4,7 +4,7 @@
 --
 -- Silver owns all complex PySpark logic (stateful interval derivation, dedup).
 -- This notebook is intentionally a thin SQL projection: surrogate key, rounding,
--- and data quality constraints. ESDL-aligned column names are inherited from
+-- and data quality constraints. normalized column names are inherited from
 -- silver.ampcore_econnection_measurements.
 
 -- COMMAND ----------
@@ -15,11 +15,11 @@ CREATE OR REFRESH STREAMING TABLE gold.f_ampcore_econnection_measurements (
   event_date              DATE           COMMENT 'Calendar date derived from timestamp',
   gateway_id              STRING         COMMENT 'AMPCORE SCU200 gateway identifier (original_id_in_source component)',
   object_id               INT            COMMENT 'Sensor object ID within the SCU200 gateway (original_id_in_source component)',
-  current_rms           DOUBLE         COMMENT 'AC RMS current (A); ESDL CURRENT, rounded to 2dp',
-  current              DOUBLE         COMMENT 'AC current component (A); ESDL CURRENT, rounded to 2dp',
-  dc_current              DOUBLE         COMMENT 'DC current component (A); ESDL CURRENT InPort, rounded to 2dp',
-  power          DOUBLE         COMMENT 'AC active power (W); ESDL POWER, rounded to 2dp',
-  energy_cumulative     DOUBLE         COMMENT 'Cumulative active energy counter (kWh); ESDL ENERGY — gap-resilient source of truth',
+  current_rms           DOUBLE         COMMENT 'AC RMS current (A); CURRENT, rounded to 2dp',
+  current              DOUBLE         COMMENT 'AC current component (A); CURRENT, rounded to 2dp',
+  dc_current              DOUBLE         COMMENT 'DC current component (A); CURRENT InPort, rounded to 2dp',
+  power          DOUBLE         COMMENT 'AC active power (W); POWER, rounded to 2dp',
+  energy_cumulative     DOUBLE         COMMENT 'Cumulative active energy counter (kWh); ENERGY — gap-resilient source of truth',
   energy_interval       DOUBLE         COMMENT 'Energy consumed in this 30-second interval, derived as a delta in the silver layer (kWh)',
   gold_processing_timestamp TIMESTAMP     COMMENT 'Timestamp when this row was written to gold',
   CONSTRAINT valid_sk                   EXPECT (sk_econnection IS NOT NULL)                                     ON VIOLATION FAIL UPDATE,
@@ -31,7 +31,7 @@ CREATE OR REFRESH STREAMING TABLE gold.f_ampcore_econnection_measurements (
 )
 CLUSTER BY AUTO
 COMMENT
-  'Gold fact for AMPCORE SCU200 CurrentSensor telemetry, ESDL-aligned as EConnection
+  'Gold fact for AMPCORE SCU200 CurrentSensor telemetry, normalized as EConnection
    metering-point measurements. One row per (sk_econnection, timestamp).
    Resolution is always 30s — enforced by silver expect_or_fail on resolution = 30s.
    energy_cumulative is the meter raw kWh counter (gap-resilient source of truth).

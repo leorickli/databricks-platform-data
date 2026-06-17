@@ -1,7 +1,7 @@
 resources:
   jobs:
     connector_volumes_cleanup:
-      name: dpx volume cleanup job
+      name: lmx volume cleanup job
       description: >-
         Auto-discovery connector-based TTL cleanup for volumes in the land layer.
 
@@ -11,7 +11,7 @@ resources:
         3. Creates/updates a configuration table with discovered volumes
         4. Performs cleanup on all discovered volumes based on retention policies
 
-        Supported connectors: voltcore, sunpeak, solarflow, wattflow (extensible to tracksys, etc.)
+        Supported connectors: ampcore, smartnode (extensible to any new connector).
 
         No manual configuration needed - fully automatic discovery and cleanup!
       email_notifications:
@@ -27,9 +27,9 @@ resources:
       tasks:
         - task_key: auto_discovery_cleanup
           notebook_task:
-            notebook_path: ../src/dpx/connector_volumes_cleanup.py
+            notebook_path: ../src/lmx/connector_volumes_cleanup.py
             base_parameters:
-              connector_names: voltcore,sunpeak,solarflow,wattflow
+              connector_names: ampcore,smartnode
               retention_days: "15"
               catalogs_to_scan: "*_dev,*_prod"
             source: WORKSPACE
@@ -43,7 +43,7 @@ resources:
 
 # Production target-specific overrides for pause/unpause control
 targets:
-  dpx-prod:
+  lmx-prod:
     resources:
       jobs:
         connector_volumes_cleanup:

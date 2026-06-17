@@ -1,3 +1,0 @@
-id,name,description,short_name,original_id_in_source,type,building_year,energy_label,energy_index,floor_area,number_of_floors,asset_type,manufacturer,owner,state,surface_area,commissioning_date,decommissioning_date,installation_duration,technical_lifetime,aggregated,aggregation_count
-a5667b60-0b35-453d-a9ab-da3322b8c5f6,Bedrijfspand Accu Trading,Bedrijfspand met accu (trading) en zonnepanelen,ACME-BLDG-001,a5667b60-0b35-453d-a9ab-da3322b8c5f6,UTILITY,2018,A,0.75,850.0,3,,ACME,ACME Infra,OPERATIONAL,1200,2018-06-01,,30.0,30.0,false,1
-6ba13993-c8b6-42db-ab28-315ba78cb875,Kantoor 3x80A,Kantoor met accu zonnepanelen en warmtepomp,ACME-BLDG-002,6ba13993-c8b6-42db-ab28-315ba78cb875,OFFICE,2020,B,1.10,450.0,2,,ACME,ACME Infra,OPERATIONAL,600,2020-03-15,,20.0,30.0,false,1

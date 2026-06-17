@@ -9,7 +9,7 @@ This notebook:
 3. Performs TTL cleanup operations on all discovered volumes
 
 Parameters:
-    - connector_names: Comma-separated list of connector names to process (e.g., 'voltcore,sunpeak,solarflow')
+    - connector_names: Comma-separated list of connector names to process (e.g., 'ampcore,smartnode')
     - retention_days: Default retention period in days (default: 15)
     - catalogs_to_scan: Comma-separated list of catalog patterns to scan (default: '*_dev,*_prod')
 """
@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 # COMMAND ----------
 
 # DBTITLE 1,Widget Configuration
-dbutils.widgets.text("connector_names", "voltcore,sunpeak,solarflow,wattflow", "Connector Names (comma-separated)")
+dbutils.widgets.text("connector_names", "ampcore,smartnode", "Connector Names (comma-separated)")
 dbutils.widgets.text("retention_days", "15", "Default Retention Days")
 dbutils.widgets.text("catalogs_to_scan", "*_dev,*_prod", "Catalog Patterns (comma-separated)")
 
@@ -26,8 +26,8 @@ CONNECTOR_NAMES = [name.strip() for name in dbutils.widgets.get("connector_names
 DEFAULT_RETENTION_DAYS = int(dbutils.widgets.get("retention_days"))
 CATALOG_PATTERNS = [pattern.strip() for pattern in dbutils.widgets.get("catalogs_to_scan").split(",")]
 
-# Configuration table location - stored in dpx catalog
-CONFIG_CATALOG = "dpx_dev"
+# Configuration table location - stored in lmx catalog
+CONFIG_CATALOG = "lmx_dev"
 CONFIG_SCHEMA = "operational"
 CONFIG_TABLE = "connector_volume_config"
 CONFIG_TABLE_PATH = f"{CONFIG_CATALOG}.{CONFIG_SCHEMA}.{CONFIG_TABLE}"
@@ -46,8 +46,8 @@ print(f"{'='*60}\n")
 # DBTITLE 1,Create Configuration Table
 spark.sql(f"""
     CREATE TABLE IF NOT EXISTS {CONFIG_TABLE_PATH} (
-        connector_name STRING COMMENT 'API connector name (e.g., voltcore, sunpeak, solarflow)',
-        client_catalog STRING COMMENT 'Client catalog name (e.g., globex_dev, acme_dev)',
+        connector_name STRING COMMENT 'API connector name (e.g., ampcore, smartnode)',
+        client_catalog STRING COMMENT 'Client catalog name (e.g., acme_dev)',
         volume_name STRING COMMENT 'Volume name in the land schema',
         retention_days INT COMMENT 'Number of days to retain files before deletion',
         last_discovered TIMESTAMP COMMENT 'When this volume was last discovered',

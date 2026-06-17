@@ -36,9 +36,9 @@ from databricks.sdk.service.workspace import AclPermission
 #   databricks auth login --host https://<workspace>.cloud.databricks.com --profile <name>
 
 PROFILES = {
-    "dev":  "dpx-dev",
-    "stg":  "dpx-stg",
-    "prod": "dpx-prod",
+    "dev":  "lmx-dev",
+    "stg":  "lmx-stg",
+    "prod": "lmx-prod",
 }
 
 
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     # ── Deploy shared secrets (same in both) ──
     # deploy_shared_secrets(clients, "acme_smartnode_api_creds", {
     #     "base_url": "https://smartnode.eu/login/api/v1",
-    #     "api_key": "getQkU2OEZDMkQ1NjJEREJGNDk2Mjg2QUY2dataplatform",
+    #     "api_key": "getQkU2OEZDMkQ1NjJEREJGNDk2Mjg2QUY2lmx",
     # })
 
     # ── Copy a whole scope between envs ───────

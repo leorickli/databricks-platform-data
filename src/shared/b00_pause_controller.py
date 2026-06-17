@@ -6,7 +6,7 @@ Universal Pause Controller for Job Execution Control
 This notebook checks if a job should be paused based on client-defined date ranges.
 It should be attached as the FIRST task of any job that requires pause scheduling capability.
 
-**PREREQUISITE**: Run src/dpx/e01_pause_schedules_ddl.py FIRST to create the pause_schedules table.
+**PREREQUISITE**: Run src/lmx/e01_pause_schedules_ddl.py FIRST to create the pause_schedules table.
 
 Behavior:
 - Reads pause schedules from {client_catalog}.operational.pause_schedules table
@@ -16,8 +16,8 @@ Behavior:
 - If table doesn't exist: Allows execution with warning (fail-open)
 
 Parameters:
-    - job_name: Identifier for the job (e.g., 'wattflow', 'voltcore', 'tracksys')
-    - catalog_name: Client catalog name (e.g., 'acme_dev', 'acme_prod', 'globex_dev', 'globex_prod')
+    - job_name: Identifier for the job (e.g., 'ampcore', 'smartnode')
+    - catalog_name: Client catalog name (e.g., 'acme_dev', 'acme_prod')
 
 Usage:
     Attach this notebook as the first task in your job YAML:
@@ -26,21 +26,21 @@ Usage:
     tasks:
       - task_key: b00_pause_controller
         notebook_task:
-          notebook_path: ../src/dpx/b00_pause_controller.py
+          notebook_path: ../src/lmx/b00_pause_controller.py
           base_parameters:
-            job_name: wattflow
+            job_name: ampcore
             catalog_name: ${var.acme_catalog}
           source: WORKSPACE
         job_cluster_key: <your_cluster>
 
-    For GLOBEX jobs:
+    For another client's jobs:
     tasks:
       - task_key: b00_pause_controller
         notebook_task:
-          notebook_path: ../src/dpx/b00_pause_controller.py
+          notebook_path: ../src/lmx/b00_pause_controller.py
           base_parameters:
-            job_name: voltcore
-            catalog_name: ${var.globex_catalog}
+            job_name: smartnode
+            catalog_name: ${var.acme_catalog}
           source: WORKSPACE
         job_cluster_key: <your_cluster>
 
@@ -54,8 +54,8 @@ from datetime import date
 # COMMAND ----------
 
 # DBTITLE 1,Widget Configuration
-dbutils.widgets.text("job_name", "", "Job Name (e.g., wattflow, voltcore, tracksys)")
-dbutils.widgets.text("catalog_name", "", "Client Catalog Name (e.g., acme_dev, globex_dev)")
+dbutils.widgets.text("job_name", "", "Job Name (e.g., ampcore, smartnode)")
+dbutils.widgets.text("catalog_name", "", "Client Catalog Name (e.g., acme_dev)")
 
 JOB_NAME = dbutils.widgets.get("job_name")
 CATALOG_NAME = dbutils.widgets.get("catalog_name")
@@ -65,7 +65,7 @@ PAUSE_SCHEDULES_TABLE = f"{CATALOG_NAME}.operational.pause_schedules"
 if not JOB_NAME:
     raise ValueError("job_name parameter is required. Please provide the job identifier.")
 if not CATALOG_NAME:
-    raise ValueError("catalog_name parameter is required. Please provide the client catalog name (e.g., acme_dev, globex_dev).")
+    raise ValueError("catalog_name parameter is required. Please provide the client catalog name (e.g., acme_dev).")
 
 print(f"{'='*60}")
 print(f"PAUSE CONTROLLER - JOB EXECUTION CHECK")
@@ -88,8 +88,8 @@ except Exception as e:
     print(f"   Error: {e}")
     print(f"✅ No pause schedules configured. Job execution allowed.\n")
     print(f"💡 To enable pause scheduling:")
-    print(f"   1. Run src/dpx/e01_pause_schedules_ddl.py to create the table")
-    print(f"   2. Use src/dpx/e02_manage_pause_schedules.py to add schedules\n")
+    print(f"   1. Run src/lmx/e01_pause_schedules_ddl.py to create the table")
+    print(f"   2. Use src/lmx/e02_manage_pause_schedules.py to add schedules\n")
     dbutils.notebook.exit("SUCCESS: No pause schedules table - execution allowed (fail-open)")
 
 # COMMAND ----------

@@ -4,8 +4,8 @@ How the frontend reads connection health, and the **exact steps to push a schema
 change live** when you add/remove columns on `connection_status`.
 
 This spans two repos:
-- **dataplatformx-data** (this repo) — produces the source table via `b10`/`b11`.
-- **dataplatformx-infra** — owns the Lakebase project, synced tables, and the
+- **lmx-data** (this repo) — produces the source table via `b10`/`b11`.
+- **lmx-infra** — owns the Lakebase project, synced tables, and the
   refresh job (`modules/databricks_workspace_*/lakebase.tf`).
 
 ## Architecture (why a schema change is a multi-step migration)
@@ -17,7 +17,7 @@ b10/b11 append ──► <client>.metadata.connection_status   (Delta, source of
             <client>.serving.connection_status            (FOREIGN / POSTGRESQL_FORMAT
                           │                                synced table → Lakebase Postgres)
                           ▼
-            frontend  ◄── reads Postgres directly as dpx_webapp_sp (OAuth token = pw)
+            frontend  ◄── reads Postgres directly as lmx_webapp_sp (OAuth token = pw)
 ```
 
 Key facts that drive the runbook:
@@ -56,10 +56,10 @@ schema exists at replace time, so this must happen before step 1. Either:
 - let one `b10` run add them via `mergeSchema=true` (the write schema always
   carries the new fields, so the first run evolves the table even with no gaps).
 
-Run it on **every** client catalog so they don't drift (`acme_*`, `globex_*`, dev/stg).
+Run it on **every** client catalog so they don't drift (`acme_*`, dev/stg).
 
 **1. Recreate the synced table** (re-snapshots full history with the new schema),
-run from `dataplatformx-infra/`:
+run from `lmx-infra/`:
 
 ```bash
 # Production
@@ -76,7 +76,7 @@ then in psql:
 ```sql
 -- (a) find the webapp SP role: the only UUID role that is NOT the Terraform SP
 SELECT rolname FROM pg_roles
-WHERE rolname ~ '^[0-9a-f]{8}-' AND rolname <> '4de0dae4-f2bf-4abc-9912-8694ce387618';
+WHERE rolname ~ '^[0-9a-f]{8}-' AND rolname <> '11111111-1111-1111-1111-111111111111';
 
 -- (b) grant — paste the UUID from (a), keep the double quotes
 GRANT SELECT ON serving.connection_status TO "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
@@ -86,7 +86,7 @@ GRANT SELECT ON serving.connection_status TO "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx
 ```
 
 **3. (Optional) Force an immediate refresh** instead of waiting up to 1h for the
-trigger: run the `dpx-serving[-stg] - acme.connection_status sync refresh` job from
+trigger: run the `lmx-serving[-stg] - acme.connection_status sync refresh` job from
 the Workflows UI (Run now). The `-replace` already re-snapshotted everything that
 existed at that moment; only rows appended *after* the replace wait on the trigger.
 
@@ -107,14 +107,14 @@ Everyday one-liner (fresh OAuth token each run — tokens expire hourly). Copy a
 **Production:**
 
 ```bash
-PGPASSWORD=$(databricks auth token -p dpx-prod | jq -r .access_token) \
+PGPASSWORD=$(databricks auth token -p lmx-prod | jq -r .access_token) \
   psql "host=ep-example-dev-0000.database.eu-central-1.cloud.databricks.com dbname=acme user=developer@example.com sslmode=require"
 ```
 
 **Staging:**
 
 ```bash
-PGPASSWORD=$(databricks auth token -p dpx-stg | jq -r .access_token) \
+PGPASSWORD=$(databricks auth token -p lmx-stg | jq -r .access_token) \
   psql "host=ep-example-prod-0000.database.eu-central-1.cloud.databricks.com dbname=acme user=developer@example.com sslmode=require"
 ```
 
@@ -134,12 +134,12 @@ Notes:
 | Module (for `-replace`) | `databricks_workspace_production` | `databricks_workspace_staging` |
 | Source table | `acme_prod.metadata.connection_status` | `acme_stg.metadata.connection_status` |
 | Catalog | `acme_prod` | `acme_stg` |
-| Lakebase project | `dpx-serving` | `dpx-serving-stg` |
-| CLI profile | `dpx-prod` | `dpx-stg` |
+| Lakebase project | `lmx-serving` | `lmx-serving-stg` |
+| CLI profile | `lmx-prod` | `lmx-stg` |
 | Endpoint host | `ep-example-dev-0000.database.eu-central-1.cloud.databricks.com` | `ep-example-prod-0000.database.eu-central-1.cloud.databricks.com` |
 
 The Terraform SP (excluded in the `pg_roles` query above) is the same in both:
-`4de0dae4-f2bf-4abc-9912-8694ce387618`. Only a **acme** synced table exists today —
-there is no `globex` synced table yet. Endpoint hosts are current as of 2026-06-16;
+`11111111-1111-1111-1111-111111111111`. Only an **acme** synced table exists today —
+there is no second-client synced table yet. Endpoint hosts are current as of 2026-06-16;
 re-fetch with `databricks postgres list-endpoints projects/<project>/branches/main -p <profile>`
 if a project is ever recreated.

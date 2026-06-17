@@ -4,16 +4,16 @@
 This notebook updates the connection status metadata and calculates quality metrics after a pipeline completes.
 
 It supports both single and multiple connections per pipeline:
-- Single connection mode: Pass connection_id parameter (e.g., Sunpeak)
-- Multi-connection mode: Pass connector parameter (e.g., voltcore_api for all Voltcore devices)
+- Single connection mode: Pass connection_id parameter (e.g., a single smartnode asset)
+- Multi-connection mode: Pass connector parameter (e.g., ampcore_api for all AMPCORE devices)
 
 Usage:
-1. Single connection (Sunpeak):
-   - connection_id: "sunpeak_7f181dc8_7c"
+1. Single connection (smartnode):
+   - connection_id: "smartnode_<account>_<asset>"
 
-2. Multiple connections (Voltcore):
-   - connector: "voltcore_api"
-   - Will update all Voltcore devices (2623_inverter, 2623_battery, 2611_inverter, 2611_battery)
+2. Multiple connections (ampcore):
+   - connector: "ampcore_api"
+   - Will update all AMPCORE devices registered in metadata.connection_config
 
 Process:
 1. Reads connection config(s) from metadata.connection_config
@@ -45,15 +45,15 @@ import json
 # COMMAND ----------
 
 # DBTITLE 1,Configuration
-dbutils.widgets.text("catalog_name", "globex_dev", "Catalog Name")
+dbutils.widgets.text("catalog_name", "acme_dev", "Catalog Name")
 CATALOG_NAME = dbutils.widgets.get("catalog_name")
 
-# Option 1: Single connection mode (for Sunpeak)
+# Option 1: Single connection mode (for a single smartnode asset)
 dbutils.widgets.text("connection_id", "", "Single Connection ID (leave empty to use connector)")
 CONNECTION_ID = dbutils.widgets.get("connection_id")
 
-# Option 2: Multi-connection mode (for Voltcore, Solarflow, Wattflow)
-dbutils.widgets.text("connector", "", "Connector name (e.g., voltcore_api, sunpeak_api, wattflow_api)")
+# Option 2: Multi-connection mode (for ampcore, smartnode)
+dbutils.widgets.text("connector", "", "Connector name (e.g., ampcore_api, smartnode_api)")
 CONNECTOR = dbutils.widgets.get("connector")
 
 # Validate parameters
@@ -158,24 +158,24 @@ for config in configs:
 
     # Extract filter clause and timestamp column from other_metadata
     # Supports multiple connectors:
-    #   - Wattflow: filters by ean + key, uses 'timestamp' column
-    #   - Ecosphere: filters by building_uuid, uses 'measurement_timestamp' column
+    #   - Strategy A: filter by ean + key
+    #   - Strategy B: filter by building_uuid (custom timestamp column)
     #   - Others: no filter, uses 'timestamp' column (default)
     where_clause = ""
-    ts_col = "timestamp"  # Default timestamp column (Wattflow gold tables)
+    ts_col = "timestamp"  # Default timestamp column
     processing_ts_col = "gold_processing_timestamp"  # Default processing timestamp column
     other_metadata = config['other_metadata'] if 'other_metadata' in config.__fields__ else None
     if other_metadata:
         try:
             metadata_dict = json.loads(other_metadata)
 
-            # Read custom timestamp column if specified (e.g., Ecosphere uses measurement_timestamp)
+            # Read custom timestamp column if specified (when the gold table uses a non-default name)
             ts_col = metadata_dict.get('timestamp_col', ts_col)
 
             # Read custom processing timestamp column if specified
             processing_ts_col = metadata_dict.get('processing_timestamp_col', processing_ts_col)
 
-            # Wattflow: filter by EAN + key
+            # Strategy A: filter by EAN + key
             ean = metadata_dict.get('ean')
             key = metadata_dict.get('key')
             if ean and key:
@@ -185,7 +185,7 @@ for config in configs:
                 where_clause = f"WHERE ean = '{ean}'"
                 print(f"  → Filtering by EAN: {ean}")
 
-            # Ecosphere: filter by building_uuid
+            # Strategy B: filter by building_uuid
             building_uuid = metadata_dict.get('building_uuid')
             if building_uuid and not ean:
                 where_clause = f"WHERE building_uuid = '{building_uuid}'"
@@ -260,7 +260,7 @@ for config in configs:
             print(f"  Latest record: {latest_record_timestamp}")
 
             # Single query to get all hourly metrics for yesterday
-            # Apply connection filter if present (EAN+key for Wattflow, building_uuid for Ecosphere)
+            # Apply connection filter if present (EAN+key or building_uuid, per connection_config)
             ean_filter = f"AND {where_clause.replace('WHERE', '')}" if where_clause else ""
 
             # Get table columns to check for value fields and processing timestamp availability

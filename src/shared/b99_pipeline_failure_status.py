@@ -14,7 +14,7 @@ Purpose:
 
 Parameters:
     - catalog_name: Client catalog name (e.g., 'acme_dev')
-    - connector: Connector name (e.g., 'wattflow_api')
+    - connector: Connector name (e.g., 'ampcore_api')
 
 Key Logic:
 - Only processes meters where meterStatus = 'active' (from other_metadata JSON)
@@ -37,7 +37,7 @@ import traceback
 
 # DBTITLE 1,Configuration
 dbutils.widgets.text("catalog_name", "acme_dev", "Catalog Name")
-dbutils.widgets.text("connector", "wattflow_api", "Connector name")
+dbutils.widgets.text("connector", "ampcore_api", "Connector name")
 
 CATALOG_NAME = dbutils.widgets.get("catalog_name")
 CONNECTOR = dbutils.widgets.get("connector")

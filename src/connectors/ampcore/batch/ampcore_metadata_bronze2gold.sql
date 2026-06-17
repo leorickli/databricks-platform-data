@@ -6,23 +6,22 @@
 -- variables is reshaped from MapType(varName → struct) to ArrayType<Struct> so
 -- downstream SQL can iterate it with LATERAL VIEW explode instead of map bracket access.
 --
--- Ontology: each AMPCORE CurrentSensor is modelled as an ESDL EConnection metering
--- point. ESDL attributes (id, original_id_in_source, name, asset_type, manufacturer,
+-- Modeling: each AMPCORE CurrentSensor is modelled as an EConnection metering
+-- point. attributes (id, original_id_in_source, name, asset_type, manufacturer,
 -- serialNumber) are surfaced explicitly; AMPCORE-specific fields (gatewayIp,
--- modbusId, variables) are kept for operational use. Direction is the ESDL
--- representation of isEnergyExport: 'Export' for feed-in sensors, 'Import' for
+-- modbusId, variables) are kept for operational use. Direction is the -- representation of isEnergyExport: 'Export' for feed-in sensors, 'Import' for
 -- grid-consumption sensors.
 
 -- COMMAND ----------
 
 CREATE OR REFRESH MATERIALIZED VIEW gold.d_ampcore_econnections (
-  sk_econnection        STRING       COMMENT 'ESDL EConnection id — sha2-256 on gatewayId|objectId, stable across gateway IP changes',
-  original_id_in_source   STRING       COMMENT 'ESDL EConnection.original_id_in_source — composite gatewayId|objectId',
-  name                 STRING       COMMENT 'ESDL EConnection.name — human-readable sensor name configured in the SCU200',
-  asset_type            STRING       COMMENT 'ESDL EConnection.asset_type — always ''AMPCORE SCU200 CurrentSensor''',
-  manufacturer         STRING       COMMENT 'ESDL EConnection.manufacturer — always ''AMPCORE''',
+  sk_econnection        STRING       COMMENT 'EConnection id — sha2-256 on gatewayId|objectId, stable across gateway IP changes',
+  original_id_in_source   STRING       COMMENT 'EConnection.original_id_in_source — composite gatewayId|objectId',
+  name                 STRING       COMMENT 'EConnection.name — human-readable sensor name configured in the SCU200',
+  asset_type            STRING       COMMENT 'EConnection.asset_type — always ''AMPCORE SCU200 CurrentSensor''',
+  manufacturer         STRING       COMMENT 'EConnection.manufacturer — always ''AMPCORE''',
   serial_number        STRING       COMMENT 'Physical sensor serial number',
-  direction            STRING       COMMENT 'ESDL energy flow direction: ''Export'' (feed-in to grid) or ''Import'' (grid consumption), derived from isEnergyExport',
+  direction            STRING       COMMENT 'energy flow direction: ''Export'' (feed-in to grid) or ''Import'' (grid consumption), derived from isEnergyExport',
   gateway_id           STRING       COMMENT 'AMPCORE SCU200 gateway identifier (natural key component)',
   gateway_ip           STRING       COMMENT 'AMPCORE SCU200 gateway IP address at snapshot time',
   gateway_serial_number STRING      COMMENT 'AMPCORE SCU200 gateway serial number',
@@ -37,10 +36,10 @@ CREATE OR REFRESH MATERIALIZED VIEW gold.d_ampcore_econnections (
 )
 CLUSTER BY AUTO
 COMMENT
-  'Gold dimension for AMPCORE SCU200 CurrentSensor metering points, ESDL-aligned as
+  'Gold dimension for AMPCORE SCU200 CurrentSensor metering points, normalized as
    EConnection. One row per (gatewayId, objectId, snapshotDate). sk_econnection is
    sha2-256 on gatewayId|objectId, stable across gateway IP changes. direction
-   encodes the ESDL energy-flow direction (Import / Export) of the metering
+   encodes the energy-flow direction (Import / Export) of the metering
    point. variables is an array of structs (one element per Modbus variable) for
    SQL-native LATERAL VIEW iteration.'
 AS

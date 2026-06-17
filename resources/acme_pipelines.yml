@@ -89,14 +89,14 @@ resources:
         process_type: batch
 
 targets:
-  dpx-dev:
+  lmx-dev:
     resources:
       pipelines:
         acme_ampcore_pipeline:
           development: true
         acme_smartnode_pipeline:
           development: true
-  dpx-prod:
+  lmx-prod:
     resources:
       pipelines:
         acme_ampcore_pipeline:

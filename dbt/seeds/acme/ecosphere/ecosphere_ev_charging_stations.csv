@@ -1,3 +1,0 @@
-id,name,description,short_name,original_id_in_source,asset_type,manufacturer,owner,state,cons_type,power,power_factor,full_load_hours,operational_hours,number_of_connectors,efficiency,commissioning_date,decommissioning_date,installation_duration,technical_lifetime,surface_area,aggregated,aggregation_count
-evcs-a5667b60-001,EV Charger Bedrijfspand,AC charging station at Bedrijfspand for employee EVs,EVCS-001,evcs-a5667b60-001,AC Charger,Alfen,ACME Infra,OPERATIONAL,PRIMARY,22000.0,1.0,500,8760,2,0.95,2019-03-01,,5.0,15.0,,false,1
-evcs-6ba13993-001,EV Charger Kantoor 3x80A,AC charging station at office building,EVCS-002,evcs-6ba13993-001,AC Charger,Alfen,ACME Infra,OPERATIONAL,PRIMARY,22000.0,1.0,600,8760,2,0.95,2020-06-01,,5.0,15.0,,false,1

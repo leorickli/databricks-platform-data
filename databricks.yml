@@ -1,5 +1,5 @@
 bundle:
-  name: dataplatformx-data
+  name: lmx-data
 
 include:
   - resources/*.yml
@@ -10,28 +10,22 @@ variables:
     default: "17.3.x-scala2.13"
   environment_name:
     description: "Environment name (dev, prod, etc.)"
-  sql_warehouse_id:
-    description: "SQL warehouse ID for dbt tasks"
   acme_catalog:
     description: "ACME catalog name (client + environment)"
-  globex_catalog:
-    description: "GLOBEX catalog name (client + environment)"
-  dpx_catalog:
-    description: "DPX catalog name (client + environment)"
+  lmx_catalog:
+    description: "LMX catalog name (client + environment)"
   notification_emails:
     description: "Email addresses for job notifications"
     type: complex
   developer_tag:
     description: "Developer name for resource tagging"
-  dbt_profile:
-    description: "dbt profile name for authentication"
 
 targets:
-  dpx-dev:
+  lmx-dev:
     mode: development
     default: true
     workspace:
-      profile: dpx-dev
+      profile: lmx-dev
       host: https://dbc-00000000-0000.cloud.databricks.com
     permissions:
       - user_name: developer@example.com
@@ -39,38 +33,32 @@ targets:
       - group_name: developers
         level: CAN_VIEW
     variables:
-      dbt_profile: dataplatform_uc_dev
-      sql_warehouse_id: 0000000000000000
       acme_catalog: acme_dev
-      globex_catalog: globex_dev
-      dpx_catalog: dpx_dev
+      lmx_catalog: lmx_dev
       environment_name: dev
       notification_emails:
         - developer@example.com
       developer_tag: developer
-  dpx-prod:
+  lmx-prod:
     mode: production
     default: false
     workspace:
-      profile: dpx-prod
+      profile: lmx-prod
       host: https://dbc-11111111-1111.cloud.databricks.com
       root_path: /Workspace/Users/developer@example.com/.bundle/${bundle.name}/${bundle.target}
     variables:
-      dbt_profile: dataplatform_uc_prod
-      sql_warehouse_id: 1111111111111111
       acme_catalog: acme_prod
-      globex_catalog: globex_prod
-      dpx_catalog: dpx_prod
+      lmx_catalog: lmx_prod
       environment_name: prod
       notification_emails:
         - developer@example.com
         # - teammate@example.com
       developer_tag: production
-  dpx-stg:
+  lmx-stg:
     mode: production
     default: false
     workspace:
-      profile: dpx-stg
+      profile: lmx-stg
       host: https://dbc-22222222-2222.cloud.databricks.com
       root_path: /Workspace/Users/developer@example.com/.bundle/${bundle.name}/${bundle.target}
     permissions:
@@ -79,11 +67,8 @@ targets:
       - group_name: developers
         level: CAN_VIEW
     variables:
-      dbt_profile: dataplatform_uc_stg
-      sql_warehouse_id: 2222222222222222
       acme_catalog: acme_stg
-      globex_catalog: globex_stg
-      dpx_catalog: dpx_stg
+      lmx_catalog: lmx_stg
       environment_name: stg
       notification_emails:
         - developer@example.com
@@ -93,4 +78,3 @@ sync:
   include:
     - src/*/*/*/*.py
     - src/shared/*.py
-    - dbt/

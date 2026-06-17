@@ -1,6 +1,6 @@
 -- Databricks notebook source
 -- LDP SQL definition for the Smartnode energyasset metadata gold dimensions,
--- ESDL-aligned. Runs inside acme_smartnode_pipeline (see resources/acme_pipelines.yml).
+-- normalized. Runs inside acme_smartnode_pipeline (see resources/acme_pipelines.yml).
 --
 -- A Smartnode energyasset corresponds to a Building containing an EConnection
 -- and (optionally) a PVInstallation. We do not yet have a metadata signal
@@ -15,10 +15,10 @@
 -- COMMAND ----------
 
 CREATE OR REFRESH MATERIALIZED VIEW gold.d_smartnode_econnections (
-  sk_econnection           STRING    COMMENT 'ESDL EConnection id — sha2-256 on accountId|energyassetId|EConnection',
-  original_id_in_source      STRING    COMMENT 'ESDL EConnection.original_id_in_source — composite accountId|energyassetId',
-  asset_type               STRING    COMMENT 'ESDL EConnection.asset_type — always ''Smartnode EConnection''',
-  manufacturer            STRING    COMMENT 'ESDL EConnection.manufacturer — always ''Smartnode''',
+  sk_econnection           STRING    COMMENT 'EConnection id — sha2-256 on accountId|energyassetId|EConnection',
+  original_id_in_source      STRING    COMMENT 'EConnection.original_id_in_source — composite accountId|energyassetId',
+  asset_type               STRING    COMMENT 'EConnection.asset_type — always ''Smartnode EConnection''',
+  manufacturer            STRING    COMMENT 'EConnection.manufacturer — always ''Smartnode''',
   account_id              INT       COMMENT 'Smartnode account identifier (natural key component)',
   energyasset_id          INT       COMMENT 'Smartnode energy asset identifier (natural key component)',
   validated               TIMESTAMP COMMENT 'Last validated timestamp for this asset per the Smartnode API',
@@ -30,7 +30,7 @@ CREATE OR REFRESH MATERIALIZED VIEW gold.d_smartnode_econnections (
 CLUSTER BY AUTO
 COMMENT
   'Gold dimension for Smartnode EConnection assets (grid connection of an energyasset),
-   ESDL-aligned. One row per (accountId, energyassetId, snapshotDate).
+   normalized. One row per (accountId, energyassetId, snapshotDate).
    sk_econnection is sha2-256 on accountId|energyassetId|EConnection — stable
    across re-provisioning. Used by smartnode_connection_config.py to seed
    connection_config for the EConnection side of the energyasset.'
@@ -61,10 +61,10 @@ WHERE rn = 1
 -- COMMAND ----------
 
 CREATE OR REFRESH MATERIALIZED VIEW gold.d_smartnode_pvinstallations (
-  sk_pvinstallation        STRING    COMMENT 'ESDL PVInstallation id — sha2-256 on accountId|energyassetId|PVInstallation',
-  original_id_in_source      STRING    COMMENT 'ESDL PVInstallation.original_id_in_source — composite accountId|energyassetId',
-  asset_type               STRING    COMMENT 'ESDL PVInstallation.asset_type — always ''Smartnode PVInstallation''',
-  manufacturer            STRING    COMMENT 'ESDL PVInstallation.manufacturer — always ''Smartnode''',
+  sk_pvinstallation        STRING    COMMENT 'PVInstallation id — sha2-256 on accountId|energyassetId|PVInstallation',
+  original_id_in_source      STRING    COMMENT 'PVInstallation.original_id_in_source — composite accountId|energyassetId',
+  asset_type               STRING    COMMENT 'PVInstallation.asset_type — always ''Smartnode PVInstallation''',
+  manufacturer            STRING    COMMENT 'PVInstallation.manufacturer — always ''Smartnode''',
   account_id              INT       COMMENT 'Smartnode account identifier (natural key component)',
   energyasset_id          INT       COMMENT 'Smartnode energy asset identifier (natural key component)',
   validated               TIMESTAMP COMMENT 'Last validated timestamp for this asset per the Smartnode API',
@@ -76,7 +76,7 @@ CREATE OR REFRESH MATERIALIZED VIEW gold.d_smartnode_pvinstallations (
 CLUSTER BY AUTO
 COMMENT
   'Gold dimension for Smartnode PVInstallation assets (optional PV system attached
-   to an energyasset), ESDL-aligned. Currently emitted for every energyasset
+   to an energyasset), normalized. Currently emitted for every energyasset
    (we lack a metadata signal for PV presence); the f_smartnode_pvinstallation_measurements
    fact will be empty for assets that never produce a cat-10 reading. One row
    per (accountId, energyassetId, snapshotDate). sk_pvinstallation is sha2-256

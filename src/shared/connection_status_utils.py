@@ -37,7 +37,7 @@ def ensure_metadata_tables(spark, catalog):
     and by b10_update_batch_connection_metadata. Streaming (b11) keeps its own
     schema — see that notebook.
 
-    The `metadata` schema is Terraform-managed in dataplatformx-infra; this
+    The `metadata` schema is Terraform-managed in lmx-infra; this
     helper never creates it.
     """
     config_table = f"{catalog}.metadata.connection_config"
@@ -45,16 +45,16 @@ def ensure_metadata_tables(spark, catalog):
 
     spark.sql(f"""
     CREATE TABLE IF NOT EXISTS {config_table} (
-        connection_id STRING NOT NULL COMMENT 'Unique connection identifier (e.g., ecosphere_a5667b60_econnection_history)',
+        connection_id STRING NOT NULL COMMENT 'Unique connection identifier (e.g., ampcore_<sensor>_history)',
         data_name STRING COMMENT 'Human-readable connection name',
         type STRING COMMENT 'Connection type (e.g., Electricity History, Battery SoC)',
         data_type STRING COMMENT 'Equipment type (Battery, Inverter, Charging Station, Electricity Meter)',
         protocol STRING COMMENT 'Communication protocol (HTTP, MQTT, Kafka)',
         location STRING COMMENT 'Physical location of the device',
         object_id STRING COMMENT 'Business object reference (e.g., ACME Bunnik ABCD)',
-        client STRING COMMENT 'Client name (ACME, GLOBEX)',
+        client STRING COMMENT 'Client name (e.g., ACME)',
         brand STRING COMMENT 'Device manufacturer',
-        connector STRING COMMENT 'Data source connector (ecosphere_api, wattflow_api, voltcore_api, etc.)',
+        connector STRING COMMENT 'Data source connector (ampcore_api, smartnode_api, etc.)',
         processing_type STRING COMMENT 'Batch, Real-Time, or Event-Driven',
         job_id STRING COMMENT 'Databricks job ID for this pipeline',
         job_name STRING COMMENT 'Databricks job name',

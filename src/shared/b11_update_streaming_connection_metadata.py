@@ -14,10 +14,10 @@ Key Differences from b06 (Batch):
 
 Usage:
 1. Single connection (specific device):
-   - connection_id: "kafka_inverters_device_123"
+   - connection_id: "stream_device_123"
 
 2. Multiple connections (connector-based):
-   - connector: "kafka_inverters"
+   - connector: "stream_connector"
    - Will update all devices for that connector
 
 Process:
@@ -49,7 +49,7 @@ import time
 # COMMAND ----------
 
 # DBTITLE 1,Configuration
-dbutils.widgets.text("catalog_name", "globex_dev", "Catalog Name")
+dbutils.widgets.text("catalog_name", "acme_dev", "Catalog Name")
 CATALOG_NAME = dbutils.widgets.get("catalog_name")
 
 # Option 1: Single connection mode
@@ -57,7 +57,7 @@ dbutils.widgets.text("connection_id", "", "Single Connection ID (leave empty to 
 CONNECTION_ID = dbutils.widgets.get("connection_id")
 
 # Option 2: Multi-connection mode (for connectors with multiple devices)
-dbutils.widgets.text("connector", "", "Connector name (e.g., kafka_inverters, tracksys_stream)")
+dbutils.widgets.text("connector", "", "Connector name (e.g., your streaming connector)")
 CONNECTOR = dbutils.widgets.get("connector")
 
 # Validate parameters
@@ -84,7 +84,7 @@ status_table = f"{CATALOG_NAME}.metadata.connection_status"
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {config_table} (
     -- Primary Key
-    connection_id STRING NOT NULL COMMENT 'Unique connection identifier (e.g., kafka_inverters_device_123)',
+    connection_id STRING NOT NULL COMMENT 'Unique connection identifier (e.g., stream_device_123)',
 
     -- Display Information
     data_name STRING COMMENT 'Human-readable connection name',
@@ -97,9 +97,9 @@ CREATE TABLE IF NOT EXISTS {config_table} (
     object_id STRING COMMENT 'Business object reference (e.g., ACME Bunnik ABCD)',
 
     -- Client & Brand Information
-    client STRING COMMENT 'Client name (ACME, GLOBEX)',
-    brand STRING COMMENT 'Device manufacturer (Sunpeak, Voltcore, Solarflow, TRACKSYS, Wattflow, SMA)',
-    connector STRING COMMENT 'Data source connector (kafka_inverters, tracksys_stream, etc.)',
+    client STRING COMMENT 'Client name (e.g., ACME)',
+    brand STRING COMMENT 'Device manufacturer',
+    connector STRING COMMENT 'Data source connector (a streaming connector name)',
     processing_type STRING COMMENT 'Batch, Real-Time, or Event-Driven',
 
     -- Pipeline Configuration

@@ -4,13 +4,13 @@
 #
 # Reads streaming bronze.ampcore_data_batch and publishes
 # silver.ampcore_econnection_measurements — one row per (gatewayId, objectId, timestamp)
-# after dedup, with ESDL-aligned column names and energy_interval derived.
+# after dedup, with normalized column names and energy_interval derived.
 #
 # All complex PySpark logic lives here so gold can be pure SQL:
 #   - Dedup (absorbs ampcore_data_api2land retries and backfill re-emits)
 #   - energy_interval via per-sensor stateful streaming (see compute_interval)
 #
-# Ontology: every AMPCORE SCU200 CurrentSensor is modelled as an ESDL EConnection
+# Modeling: every AMPCORE SCU200 CurrentSensor is modelled as an EConnection
 # metering point. Direction (Import / Export) is a property of the sensor and
 # lives on the dim (gold.d_ampcore_econnections); telemetry column names here are
 # direction-neutral so the same metrics work for any sensor.
@@ -136,9 +136,9 @@ def compute_interval(
 @dp.table(
     name="silver.ampcore_econnection_measurements",
     comment=(
-        "Silver layer for AMPCORE SCU200 CurrentSensor readings, modelled as ESDL "
+        "Silver layer for AMPCORE SCU200 CurrentSensor readings, modelled as "
         "EConnection metering points. One row per (gateway_id, object_id, timestamp) "
-        "after dedup. Column names follow ESDL telemetry conventions (current_rms, "
+        "after dedup. Column names follow telemetry conventions (current_rms, "
         "power, energy_cumulative, ...) and are direction-neutral — "
         "Import/Export direction lives on gold.d_ampcore_econnections. "
         "energy_cumulative is the raw cumulative kWh counter. energy_interval is "
@@ -148,11 +148,11 @@ def compute_interval(
         StructField("timestamp",                   TimestampType(), True, {"comment": "UTC timestamp of the 30-second reading"}),
         StructField("gateway_id",                  StringType(),    True, {"comment": "AMPCORE SCU200 gateway identifier (original_id_in_source component)"}),
         StructField("object_id",                   IntegerType(),   True, {"comment": "Sensor object ID within the SCU200 gateway (original_id_in_source component)"}),
-        StructField("current_rms",                 DoubleType(),    True, {"comment": "True-RMS current (A); ESDL CURRENT — renamed from AMPCORE Modbus currentTrms"}),
-        StructField("current",                     DoubleType(),    True, {"comment": "AC current component (A); ESDL CURRENT — renamed from AMPCORE Modbus currentAc"}),
-        StructField("dc_current",                  DoubleType(),    True, {"comment": "DC current component (A); ESDL CURRENT, InPort — renamed from AMPCORE Modbus currentDc"}),
-        StructField("power",                       DoubleType(),    True, {"comment": "Active power (W); ESDL POWER — renamed from AMPCORE Modbus activePowerTotal"}),
-        StructField("energy_cumulative",           DoubleType(),    True, {"comment": "Cumulative active energy counter (kWh); ESDL ENERGY — renamed from activeEnergyTotal"}),
+        StructField("current_rms",                 DoubleType(),    True, {"comment": "True-RMS current (A); CURRENT — renamed from AMPCORE Modbus currentTrms"}),
+        StructField("current",                     DoubleType(),    True, {"comment": "AC current component (A); CURRENT — renamed from AMPCORE Modbus currentAc"}),
+        StructField("dc_current",                  DoubleType(),    True, {"comment": "DC current component (A); CURRENT, InPort — renamed from AMPCORE Modbus currentDc"}),
+        StructField("power",                       DoubleType(),    True, {"comment": "Active power (W); POWER — renamed from AMPCORE Modbus activePowerTotal"}),
+        StructField("energy_cumulative",           DoubleType(),    True, {"comment": "Cumulative active energy counter (kWh); ENERGY — renamed from activeEnergyTotal"}),
         StructField("energy_interval",             DoubleType(),    True, {"comment": "Energy consumed in this 30-second interval, derived as a delta via stateful streaming (kWh); NULL on first reading after a gap or counter reset"}),
         StructField("resolution",                  StringType(),    True, {"comment": "Data resolution (always '30s', enforced by DQ constraint)"}),
         StructField("_rescued_data",               StringType(),    True, {"comment": "Fields present in bronze that do not match the declared silver schema"}),
