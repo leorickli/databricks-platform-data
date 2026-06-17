@@ -1,0 +1,49 @@
+name: dataplatform_uc
+profile: "{{ env_var('dbt_profile', 'dataplatform_uc_dev') }}"
+
+model-paths: [models]
+analysis-paths: [analyses]
+test-paths: [tests]
+seed-paths: [seeds]
+macro-paths: [macros]
+snapshot-paths: [snapshots]
+
+seeds:
+  dataplatform_uc:
+    dpx:
+      +database: "{{ var('dpx_catalog', 'dpx_dev') }}"
+      +schema: metadata
+    acme:
+      +database: "{{ var('acme_catalog', 'acme_dev') }}"
+      +schema: gold
+
+models:
+  dataplatform_uc:
+    +persist_docs:
+      relation: true
+      columns: true
+    dpx:
+      +database: "{{ var('dpx_catalog', 'dpx_dev') }}"
+      metadata:
+        +schema: metadata
+        +materialized: table
+    acme:
+      +database: "{{ var('acme_catalog', 'acme_dev') }}"
+      gold:
+        +schema: gold
+        +materialized: incremental
+    globex:
+      +database: "{{ var('globex_catalog', 'globex_dev') }}"
+      gold:
+        +schema: gold
+        +materialized: incremental
+        +incremental_strategy: merge
+
+clean-targets:
+  - target
+  - dbt_packages
+
+flags:
+  use_materialization_v2: true
+
+log-path: logs

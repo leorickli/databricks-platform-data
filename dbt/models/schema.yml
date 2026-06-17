@@ -1,0 +1,647 @@
+models:
+  ### ACME
+  - name: tracksys_batch
+    description: Refined telemetry data showing the average values in a 15-minute interval. ESDL Battery-aligned naming.
+    columns:
+      - name: skAsset
+        description: Surrogate key for the battery asset (sha2-256 on loggerImei), stable across reruns
+      - name: timestamp
+        description: 15-minute window start timestamp
+      - name: eventDate
+        description: Calendar date derived from timestamp
+      - name: loggerImei
+        description: International Mobile Equipment Identity of the data logger device (originalIdInSource on the ESDL Battery asset)
+      - name: SoC
+        description: Average state of charge in the 15-minute window (ESDL Battery.SoC, %)
+      - name: voltage
+        description: Average battery voltage in the 15-minute window (ESDL Battery.V, V — DC Bus)
+      - name: current
+        description: Average battery current in the 15-minute window (ESDL Battery.A, A — DC Bus)
+      - name: activePower
+        description: Average battery active power in the 15-minute window, derived as voltage * current (ESDL Battery.W, W)
+      - name: goldProcessingTimestamp
+        description: Timestamp when this row was written to gold
+
+  - name: f_wattflow_dap_batch
+    description: |
+      Gold layer fact table for Wattflow DAP (Data Access Point) meter measurements.
+      Contains 15-minute interval electricity consumption and production data
+      from construction site grid connection meters (siteMeter markers).
+
+      **Schema Structure**: Tariff rate stored as timestamp-level attribute instead of
+      duplicated across measurement columns. Each row contains 4 base energy measurements
+      plus tariff rate indicator and calculated derived metrics.
+
+      Aligned with ESDL v2 ontology (snake_case).
+
+      Site metadata can be joined via sk_econnection to d_wattflow_sites dimension table.
+    config:
+      materialized: incremental
+      incremental_strategy: append
+      on_schema_change: append_new_columns
+      schema: gold
+      cluster_by: auto
+      tags: ['meter', 'wattflow', 'haystack', 'wattflow_batch', 'acme']
+    columns:
+      # Identifiers
+      - name: dap_id
+        description: "Natural key for meter - DAP ID (snake_case ESDL v2)"
+        tests:
+          - not_null
+      - name: ean
+        description: "EAN code - energy connection identifier"
+        tests:
+          - not_null
+      - name: key
+        description: "Meter key (sleutel) - unique physical meter identifier. Combined with EAN forms the natural key."
+        tests:
+          - not_null
+      - name: sk_econnection
+        description: "Surrogate key for site - MD5 hash of ean + key"
+        tests:
+          - not_null
+
+      # Time Dimensions
+      - name: timestamp
+        description: "Measurement timestamp (end of interval) - snake_case ESDL v2"
+        tests:
+          - not_null
+      - name: measurement_date
+        description: "Date partition for measurements - snake_case ESDL v2"
+        tests:
+          - not_null
+
+      # Contextual Attributes
+      - name: tariff_rate
+        description: "Tariff rate for this timestamp: low (off-peak) or normal (peak)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['low', 'normal']
+      - name: is_peak_demand
+        description: "Peak demand flag - true when this interval represents maximum demand"
+
+      # Base Energy Measurements (from silver)
+      - name: energy_import
+        description: "AC active energy imported from grid (kWh)"
+      - name: energy_export
+        description: "AC active energy exported to grid (kWh)"
+      - name: reactive_energy_import
+        description: "AC reactive energy imported from grid (kVARh)"
+      - name: reactive_energy_export
+        description: "AC reactive energy exported to grid (kVARh)"
+
+      # Derived Metrics (calculated in gold)
+      - name: energy_throughput
+        description: "Total active energy (import + export) in kWh"
+      - name: reactive_energy_throughput
+        description: "Total reactive energy (import + export) in kVARh"
+      - name: energy_net
+        description: "Net active energy (import - export) in kWh - positive=net consumer, negative=net producer"
+      - name: reactive_energy_net
+        description: "Net reactive energy (import - export) in kVARh"
+
+      # Processing Metadata
+      - name: gold_processing_timestamp
+        description: "Timestamp when this row was written to the gold layer - used to calculate ingestion delay (gold_processing_timestamp - timestamp)"
+
+    ### GLOBEX
+  - name: f_solarflow_inverter_mjp0e6b0t5_batch
+    description: Haystack-compliant telemetry data from Solarflow inverter (Plant 10318726, SN mjp0e6b0t5) at 15-minute intervals. All fields follow Project Haystack and Sunspec ontology naming conventions for cross-vendor interoperability.
+    config:
+      materialized: incremental
+      unique_key: ['timestamp', 'sk_inverter']
+      incremental_strategy: append
+      schema: gold
+      tags: ['inverter', 'solarflow', 'haystack', 'solarflow_batch', 'globex']
+    columns:
+      - name: timestamp
+        description: Measurement timestamp from the inverter
+        tests:
+          - not_null
+      - name: sk_inverter
+        description: Device surrogate key - references d_inverters.sk_inverter
+        tests:
+          - not_null
+          - relationships:
+              to: source('globex_gold', 'd_inverters')
+              field: sk_inverter
+      - name: sk_site
+        description: Site surrogate key - references dim_site.sk_site
+      - name: sk_space
+        description: Space surrogate key - references dim_space.sk_space
+      - name: ac_power
+        description: AC Power (W)
+      - name: ac_current_l1
+        description: Phase A Current (A)
+      - name: ac_current_l2
+        description: Phase B Current (A)
+      - name: ac_current_l3
+        description: Phase C Current (A)
+      - name: ac_energy_production
+        description: AC Energy (KWh)
+      - name: dc_power
+        description: DC Power (W)
+      - name: ac_frequency
+        description: Line Frequency (H)
+      - name: ac_power_factor
+        description: AC Power Factor
+      - name: ac_voltage_l1_l2
+        description: Phase Voltage AB (V)
+      - name: ac_voltage_l2_l3
+        description: Phase Voltage BC (V)
+      - name: ac_voltage_l3_l1
+        description: Phase Voltage CA (V)
+      - name: ac_voltage_l1
+        description: Phase Voltage AN (V)
+      - name: ac_voltage_l2
+        description: Phase Voltage BN (V)
+      - name: ac_voltage_l3
+        description: Phase Voltage CN (V)
+      - name: temperature_other
+        description: Other Temperature (°C)
+      - name: operating_state
+        description: Operating state. (8→STANDBY, 4→MPPT, 7→FAULT)
+
+  - name: f_sunpeak_inverter_7f181dc8_7c_batch
+    description: Haystack-compliant telemetry data for Sunpeak inverter (Site 58604, SN 7f181dc8-7c) at 15-minute intervals. All fields follow Project Haystack and SunSpec ontology naming conventions for cross-vendor interoperability. Data aggregated from 5-minute readings and includes calculated interval energy.
+    config:
+      materialized: incremental
+      unique_key: ['timestamp', 'sk_inverter']
+      incremental_strategy: append
+      schema: gold
+      tags: ['inverter', 'sunpeak', 'haystack', 'sunpeak_batch', 'globex']
+    columns:
+      - name: timestamp
+        description: Measurement timestamp (aggregated to 15-minute intervals)
+        tests:
+          - not_null
+      - name: sk_inverter
+        description: Device surrogate key - references d_inverters.sk_inverter
+        tests:
+          - not_null
+          - relationships:
+              to: source('globex_gold', 'd_inverters')
+              field: sk_inverter
+      - name: sk_site
+        description: Site surrogate key - references dim_site.sk_site
+      - name: sk_space
+        description: Space surrogate key - references dim_space.sk_space
+      - name: ac_power
+        description: AC Power (W)
+      - name: ac_current_l1
+        description: Phase A Current (A)
+      - name: ac_energy_production
+        description: AC Energy (KWh)
+      - name: dc_voltage
+        description: DC Voltage (V)
+      - name: ac_frequency
+        description: Line Frequency (H)
+      - name: ac_power_factor
+        description: AC Power Factor
+      - name: ac_apparent_power
+        description: AC Apparent Power (ac_apparent_power)
+      - name: ac_reactive_power
+        description: AC Reactive Power (ac_reactive_power)
+      - name: ac_voltage_l1
+        description: Phase Voltage AN (V)
+      - name: temperature_other
+        description: Other Temperature (°C)
+      - name: operating_state
+        description: Operating state (2→SLEEPING, 3→STARTING, 4→MPPT, 5→THROTTLED, 6→SHUTTING DOWN, 7→ERROR, 7→STANDBY)
+
+  # Voltcore Inverter Fact Tables
+  - name: f_voltcore_inverter_2623_batch
+    description: Haystack-compliant telemetry data for Voltcore MultiPlus-II 48/5000/70-50 inverter (MOR site, Product ID 2623) at 15-minute intervals. Contains AC measurements from VE.Bus System. All fields follow Project Haystack and SunSpec ontology naming conventions for cross-vendor interoperability.
+    config:
+      materialized: incremental
+      unique_key: ['timestamp', 'sk_inverter']
+      incremental_strategy: append
+      schema: gold
+      tags: ['inverter', 'voltcore', 'haystack', 'voltcore_batch', 'globex']
+    columns:
+      - name: timestamp
+        description: 15-minute window start timestamp
+        tests:
+          - not_null
+      - name: sk_inverter
+        description: Device surrogate key - references d_inverters.sk_inverter
+        tests:
+          - not_null
+          - relationships:
+              to: source('globex_gold', 'd_inverters')
+              field: sk_inverter
+      - name: sk_site
+        description: Site surrogate key - references dim_site.sk_site
+      - name: sk_space
+        description: Space surrogate key - references dim_space.sk_space
+      - name: ac_power
+        description: "AC Power in Watts (Haystack: W)"
+      - name: ac_current_l1
+        description: "AC Current Phase A in Amps (Haystack: ac_current_l1)"
+      - name: ac_energy_production
+        description: "Energy in Watt-hours (Haystack: ac_energy_production)"
+      - name: ac_voltage_l1
+        description: "Phase-to-neutral Voltage Phase A in Volts (Haystack: ac_voltage_l1)"
+      - name: ac_frequency
+        description: "Line Frequency in Hertz (Haystack: ac_frequency)"
+      - name: temperature_cabinet
+        description: "Cabinet Temperature in Celsius (Haystack: temperature_cabinet)"
+      - name: temperature_ambient
+        description: "Ambient Temperature in Celsius (Haystack: temperature_ambient)"
+      - name: operating_state
+        description: "Operating operating_state - OFF, STANDBY, FAULT, MPPT (Haystack: operating_state)"
+
+  - name: f_voltcore_inverter_2611_batch
+    description: Haystack-compliant telemetry data for Voltcore MultiPlus-II 24/3000/70-32 inverter (TU Delft site, Product ID 2611) at 15-minute intervals. Contains AC measurements from VE.Bus System. All fields follow Project Haystack and SunSpec ontology naming conventions for cross-vendor interoperability.
+    config:
+      materialized: incremental
+      unique_key: ['timestamp', 'sk_inverter']
+      incremental_strategy: append
+      schema: gold
+      tags: ['inverter', 'voltcore', 'haystack', 'voltcore_batch', 'globex']
+    columns:
+      - name: timestamp
+        description: 15-minute window start timestamp
+        tests:
+          - not_null
+      - name: sk_inverter
+        description: Device surrogate key - references d_inverters.sk_inverter
+        tests:
+          - not_null
+          - relationships:
+              to: source('globex_gold', 'd_inverters')
+              field: sk_inverter
+      - name: sk_site
+        description: Site surrogate key - references dim_site.sk_site
+      - name: sk_space
+        description: Space surrogate key - references dim_space.sk_space
+      - name: ac_power
+        description: "AC Power in Watts (Haystack: W)"
+      - name: ac_current_l1
+        description: "AC Current Phase A in Amps (Haystack: ac_current_l1)"
+      - name: ac_energy_production
+        description: "Energy in Watt-hours (Haystack: ac_energy_production)"
+      - name: ac_voltage_l1
+        description: "Phase-to-neutral Voltage Phase A in Volts (Haystack: ac_voltage_l1)"
+      - name: ac_frequency
+        description: "Line Frequency in Hertz (Haystack: ac_frequency)"
+      - name: temperature_cabinet
+        description: "Cabinet Temperature in Celsius (Haystack: temperature_cabinet)"
+      - name: temperature_ambient
+        description: "Ambient Temperature in Celsius (Haystack: temperature_ambient)"
+      - name: operating_state
+        description: "Operating operating_state - OFF, STANDBY, FAULT, MPPT (Haystack: operating_state)"
+
+  # Voltcore Battery Fact Tables
+  - name: f_voltcore_battery_2611_batch
+    description: Haystack-compliant telemetry data for Voltcore battery system at TU Delft site (SmartShunt 500A, Product ID 2611). Contains 15-minute aggregated battery metrics including SOC, voltage, current, power, energy, and lifecycle data from Battery Monitor. All fields follow Project Haystack ontology naming conventions.
+    config:
+      materialized: incremental
+      unique_key: ['timestamp', 'sk_battery']
+      incremental_strategy: append
+      schema: gold
+      tags: ['battery', 'voltcore', 'haystack', 'voltcore_batch', 'globex']
+    columns:
+      - name: timestamp
+        description: 15-minute window start timestamp
+        tests:
+          - not_null
+      - name: sk_battery
+        description: Device surrogate key - references d_batteries.sk_battery
+        tests:
+          - not_null
+          - relationships:
+              to: source('globex_gold', 'd_batteries')
+              field: sk_battery
+      - name: sk_site
+        description: Site surrogate key - references dim_site.sk_site
+      - name: sk_space
+        description: Space surrogate key - references dim_space.sk_space
+      - name: state_of_charge
+        description: "State of Charge in percentage (Haystack: state_of_charge)"
+      - name: dc_voltage
+        description: "DC Bus Voltage in Volts (Haystack: V)"
+      - name: dc_current
+        description: "Total DC Current in Amps - positive=charging, negative=discharging (Haystack: A)"
+      - name: ac_power
+        description: "Total Power in Watts, calculated from V * A (Haystack: W)"
+      - name: ac_energy_production
+        description: "Energy in Watt-hours, rolling hourly calculation (Haystack: ac_energy_production)"
+      - name: dc_voltage_max
+        description: "Maximum battery voltage recorded in Volts - runtime telemetry (Haystack: dc_voltage_max)"
+      - name: dc_voltage_min
+        description: "Minimum battery voltage recorded in Volts - runtime telemetry (Haystack: dc_voltage_min)"
+      - name: charge_cycles
+        description: "Number of charge cycles executed (Haystack: charge_cycles)"
+      - name: operating_state
+        description: "Battery state - Running, Standby, Fault, etc. (Haystack: operating_state)"
+      - name: charged_energy_kwh
+        description: Total energy charged in kWh (cumulative)
+      - name: discharged_energy_kwh
+        description: Total energy discharged in kWh (cumulative)
+
+  - name: f_voltcore_battery_2623_batch
+    description: Haystack-compliant telemetry data for Voltcore battery system at MOR site (Lynx Smart BMS 500A, Product ID 2623). Contains 15-minute aggregated battery metrics including SOC, voltage, current, power, energy, and lifecycle data from Battery Monitor. All fields follow Project Haystack ontology naming conventions.
+    config:
+      materialized: incremental
+      unique_key: ['timestamp', 'sk_battery']
+      incremental_strategy: append
+      schema: gold
+      tags: ['battery', 'voltcore', 'haystack', 'voltcore_batch', 'globex']
+    columns:
+      - name: timestamp
+        description: 15-minute window start timestamp
+        tests:
+          - not_null
+      - name: sk_battery
+        description: Device surrogate key - references d_batteries.sk_battery
+        tests:
+          - not_null
+          - relationships:
+              to: source('globex_gold', 'd_batteries')
+              field: sk_battery
+      - name: sk_site
+        description: Site surrogate key - references dim_site.sk_site
+      - name: sk_space
+        description: Space surrogate key - references dim_space.sk_space
+      - name: state_of_charge
+        description: "State of Charge in percentage (Haystack: state_of_charge)"
+      - name: dc_voltage
+        description: "DC Bus Voltage in Volts (Haystack: V)"
+      - name: dc_current
+        description: "Total DC Current in Amps - positive=charging, negative=discharging (Haystack: A)"
+      - name: ac_power
+        description: "Total Power in Watts, calculated from V * A (Haystack: W)"
+      - name: ac_energy_production
+        description: "Energy in Watt-hours, rolling hourly calculation (Haystack: ac_energy_production)"
+      - name: dc_voltage_max
+        description: "Maximum battery voltage recorded in Volts - runtime telemetry (Haystack: dc_voltage_max)"
+      - name: dc_voltage_min
+        description: "Minimum battery voltage recorded in Volts - runtime telemetry (Haystack: dc_voltage_min)"
+      - name: charge_cycles
+        description: "Number of charge cycles executed (Haystack: charge_cycles)"
+      - name: operating_state
+        description: "Battery state - Running, Standby, Fault, etc. (Haystack: operating_state)"
+      - name: charged_energy_kwh
+        description: Total energy charged in kWh (cumulative)
+      - name: discharged_energy_kwh
+        description: Total energy discharged in kWh (cumulative)
+
+  - name: d_wattflow_sites
+    description: |
+      ESDL EConnection dim for Wattflow DAP meter sites. CSV seed (wattflow_sites)
+      keeps Haystack-style Dutch + camelCase source names; the dim translates
+      everything to snake_case English on output (e.g. sleutel→key,
+      klantnummer→customer_number, dapId→dap_id, geoAddr→geo_addr…).
+
+      Each Wattflow meter is one ESDL EConnection. sk_econnection = MD5(ean ‖ sleutel).
+      The seed table is dropped after model creation via post-hook.
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.wattflow_sites"
+      tags: ['metadata', 'wattflow', 'acme']
+    columns:
+      - name: sk_econnection
+        description: "ESDL EConnection surrogate key — MD5(CONCAT(ean, sleutel))"
+        tests:
+          - unique
+          - not_null
+      - name: ean
+        description: "EAN code - energy connection identifier (can have multiple meters)"
+      - name: key
+        description: "Meter key — unique identifier for individual meter at EAN connection point (translated from CSV `sleutel`)"
+      - name: dap_id
+        description: "DAP (Data Access Point) identifier from Wattflow (translated from CSV `dapId`)"
+      - name: dis
+        description: "Haystack display name - full location description"
+      - name: geo_addr
+        description: "Complete address string (translated from CSV `geoAddr`)"
+      - name: geo_street
+        description: "Street name and number (translated from CSV `geoStreet`)"
+      - name: geo_city
+        description: "City name (translated from CSV `geoCity`)"
+      - name: geo_postal_code
+        description: "Postal code (translated from CSV `geoPostalCode`)"
+      - name: geo_country
+        description: "Country - Netherlands (translated from CSV `geoCountry`)"
+      - name: tz
+        description: "Timezone - Europe/Amsterdam"
+      - name: meter_status
+        description: "Meter status: active or inactive"
+        tests:
+          - accepted_values:
+              values: ['active', 'inactive']
+      - name: entity
+        description: "Business entity owning/managing the meter"
+      - name: customer_number
+        description: "Customer number (translated from CSV `klantnummer`)"
+      - name: type
+        description: "Site type - e.g., Kantoor (office), null for residential/other"
+    constraints:
+      - type: primary_key
+        columns: [sk_econnection]
+
+    ### DPX
+  - name: d_ev_chargers
+    description: Dimension table containing technical specifications for various EV charger models.
+    columns:
+      - name: sk_ev_chargers
+        description: MD5 surrogate key from brand, model_series, and model_sku
+        tests:
+          - unique
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_ev_chargers]
+
+  - name: d_heat_pumps
+    description: Dimension table containing technical specifications for various heat pump models.
+    constraints:
+      - type: primary_key
+        columns: [sk_heat_pumps]
+    columns:
+      - name: sk_heat_pumps
+        description: MD5 surrogate key from brand, model_series, and model_sku
+        tests:
+          - unique
+          - not_null
+
+  ### ECOSPHERE
+  - name: d_ecosphere_buildings
+    description: |
+      ESDL-aligned dimension table for Ecosphere Building objects.
+      Contains physical building attributes seeded from ESDL ontology (type, energy label, floor area, etc.).
+      All Ecosphere silver telemetry tables reference buildings via building_uuid, which maps to the id field here.
+      Surrogate key generated via MD5(id).
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.ecosphere_buildings"
+      tags: ['dimension', 'ecosphere', 'esdl', 'building']
+    columns:
+      - name: sk_building
+        description: "MD5 surrogate key from ESDL id - use for joins from fact tables"
+        tests:
+          - unique
+          - not_null
+      - name: id
+        description: "ESDL Building id - matches building_uuid in Ecosphere silver tables"
+        tests:
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_building]
+
+  - name: d_ecosphere_econnections
+    description: |
+      ESDL-aligned dimension table for Ecosphere EConnection (Electricity Connection) objects.
+      Represents the electricity demarcation point (smart meter) between building and grid.
+      Joins with fact tables: ecosphere_batch_econnection_history, ecosphere_batch_econnection_meterreadings.
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.ecosphere_econnections"
+      tags: ['dimension', 'ecosphere', 'esdl', 'econnection']
+    columns:
+      - name: sk_econnection
+        description: "MD5 surrogate key from ESDL id"
+        tests:
+          - unique
+          - not_null
+      - name: id
+        description: "ESDL EConnection id"
+        tests:
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_econnection]
+
+  - name: d_ecosphere_hconnections
+    description: |
+      ESDL-aligned dimension table for Ecosphere HConnection (Heat Connection) objects.
+      Represents the district heating connection for a building.
+      Joins with fact tables: ecosphere_batch_hconnection_history, ecosphere_batch_hconnection_meterreadings.
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.ecosphere_hconnections"
+      tags: ['dimension', 'ecosphere', 'esdl', 'hconnection']
+    columns:
+      - name: sk_hconnection
+        description: "MD5 surrogate key from ESDL id"
+        tests:
+          - unique
+          - not_null
+      - name: id
+        description: "ESDL HConnection id"
+        tests:
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_hconnection]
+
+  - name: d_ecosphere_gconnections
+    description: |
+      ESDL-aligned dimension table for Ecosphere GConnection (Gas Connection) objects.
+      Represents the natural gas grid connection for a building.
+      Joins with fact table: ecosphere_batch_gconnection_history.
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.ecosphere_gconnections"
+      tags: ['dimension', 'ecosphere', 'esdl', 'gconnection']
+    columns:
+      - name: sk_gconnection
+        description: "MD5 surrogate key from ESDL id"
+        tests:
+          - unique
+          - not_null
+      - name: id
+        description: "ESDL GConnection id"
+        tests:
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_gconnection]
+
+  - name: d_ecosphere_waterconnections
+    description: |
+      ESDL-aligned dimension table for Ecosphere WaterConnection objects.
+      Represents the water supply connection for a building.
+      Joins with fact tables: ecosphere_batch_waterconnection_history, ecosphere_batch_waterconnection_meterreadings.
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.ecosphere_waterconnections"
+      tags: ['dimension', 'ecosphere', 'esdl', 'waterconnection']
+    columns:
+      - name: sk_waterconnection
+        description: "MD5 surrogate key from ESDL id"
+        tests:
+          - unique
+          - not_null
+      - name: id
+        description: "ESDL WaterConnection id"
+        tests:
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_waterconnection]
+
+  - name: d_ecosphere_batteries
+    description: |
+      ESDL-aligned dimension table for Ecosphere Battery objects.
+      Contains battery system specifications (capacity, charge/discharge rates, efficiency, lifecycle).
+      Joins with fact table: ecosphere_batch_battery (State of Charge telemetry).
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.ecosphere_batteries"
+      tags: ['dimension', 'ecosphere', 'esdl', 'battery']
+    columns:
+      - name: sk_battery
+        description: "MD5 surrogate key from ESDL id"
+        tests:
+          - unique
+          - not_null
+      - name: id
+        description: "ESDL Battery id"
+        tests:
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_battery]
+
+  - name: d_ecosphere_ev_charging_stations
+    description: |
+      ESDL-aligned dimension table for Ecosphere EVChargingStation objects.
+      Contains EV charger specifications (power, connectors, efficiency, etc.).
+      Joins with fact table: ecosphere_batch_ev_charging_station (socket status telemetry).
+    config:
+      materialized: table
+      file_format: delta
+      schema: gold
+      post_hook: "DROP TABLE IF EXISTS {{ var('acme_catalog', 'acme_dev') }}.gold.ecosphere_ev_charging_stations"
+      tags: ['dimension', 'ecosphere', 'esdl', 'ev_charging_station']
+    columns:
+      - name: sk_evchargingstation
+        description: "MD5 surrogate key from ESDL id"
+        tests:
+          - unique
+          - not_null
+      - name: id
+        description: "ESDL EVChargingStation id"
+        tests:
+          - not_null
+    constraints:
+      - type: primary_key
+        columns: [sk_evchargingstation]

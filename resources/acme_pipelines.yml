@@ -1,0 +1,105 @@
+resources:
+  pipelines:
+    acme_ampcore_pipeline:
+      name: acme ampcore pipeline
+      # Lakeflow Declarative Pipeline (LDP — formerly DLT) for the AMPCORE connector.
+      # Publishes bronze + silver for time-series data and bronze + gold for the
+      # CurrentSensor metadata dimension, all from the ampcore_batch land volume.
+      catalog: ${var.acme_catalog}
+      # `schema` is required by UC LDP but acts only as a fallback default.
+      # Every @dp.table in this pipeline declares name="<schema>.<table>" so
+      # the default is never used — silver and gold tables route to their own
+      # schemas via the 3-part name prefix.
+      schema: bronze
+      channel: CURRENT
+      edition: ADVANCED
+      serverless: true
+      photon: true
+      continuous: false
+      libraries:
+        - notebook:
+            path: ../src/connectors/ampcore/batch/ampcore_data_land2bronze.py
+        - notebook:
+            path: ../src/connectors/ampcore/batch/ampcore_data_bronze2silver.py
+        - notebook:
+            path: ../src/connectors/ampcore/batch/ampcore_data_silver2gold.sql
+        - notebook:
+            path: ../src/connectors/ampcore/batch/ampcore_metadata_land2bronze.py
+        - notebook:
+            path: ../src/connectors/ampcore/batch/ampcore_metadata_bronze2gold.sql
+      configuration:
+        # Source paths match the layout written by the api2land tasks:
+        #   data:     /Volumes/{catalog}/land/ampcore_batch/{gateway_id}/data/{yyyymmdd}/*.json
+        #   metadata: /Volumes/{catalog}/land/ampcore_batch/{gateway_id}/metadata/{yyyymmdd}/*.json
+        # The {gateway_id} wildcard future-proofs multi-gateway deployments.
+        ampcore.source_path: /Volumes/${var.acme_catalog}/land/ampcore_batch/*/data/
+        ampcore.metadata_source_path: /Volumes/${var.acme_catalog}/land/ampcore_batch/*/metadata/
+      notifications:
+        - email_recipients: ${var.notification_emails}
+          alerts:
+            - on-update-failure
+            - on-update-fatal-failure
+      tags:
+        client: acme
+        brand: ampcore
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+
+    acme_smartnode_pipeline:
+      name: acme smartnode pipeline
+      # Lakeflow Declarative Pipeline (LDP) for the Smartnode mySmartnode connector.
+      # Publishes bronze + silver + gold for hourly energy bundles and bronze + gold
+      # for the energyasset metadata dimension, all from the smartnode_batch land volume.
+      catalog: ${var.acme_catalog}
+      schema: bronze
+      channel: CURRENT
+      edition: ADVANCED
+      serverless: true
+      photon: true
+      continuous: false
+      libraries:
+        - notebook:
+            path: ../src/connectors/smartnode/batch/smartnode_data_land2bronze.py
+        - notebook:
+            path: ../src/connectors/smartnode/batch/smartnode_data_bronze2silver.py
+        - notebook:
+            path: ../src/connectors/smartnode/batch/smartnode_data_silver2gold.sql
+        - notebook:
+            path: ../src/connectors/smartnode/batch/smartnode_metadata_land2bronze.py
+        - notebook:
+            path: ../src/connectors/smartnode/batch/smartnode_metadata_bronze2gold.sql
+      configuration:
+        # Source paths match the layout written by the api2land tasks:
+        #   data:     /Volumes/{catalog}/land/smartnode_batch/{account_id}/data/{yyyymmdd}/*.json
+        #   metadata: /Volumes/{catalog}/land/smartnode_batch/{account_id}/metadata/{yyyymmdd}/*.json
+        # The {account_id} wildcard future-proofs multi-account deployments.
+        smartnode.source_path: /Volumes/${var.acme_catalog}/land/smartnode_batch/*/data/
+        smartnode.metadata_source_path: /Volumes/${var.acme_catalog}/land/smartnode_batch/*/metadata/
+      notifications:
+        - email_recipients: ${var.notification_emails}
+          alerts:
+            - on-update-failure
+            - on-update-fatal-failure
+      tags:
+        client: acme
+        brand: smartnode
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+
+targets:
+  dpx-dev:
+    resources:
+      pipelines:
+        acme_ampcore_pipeline:
+          development: true
+        acme_smartnode_pipeline:
+          development: true
+  dpx-prod:
+    resources:
+      pipelines:
+        acme_ampcore_pipeline:
+          development: false
+        acme_smartnode_pipeline:
+          development: false

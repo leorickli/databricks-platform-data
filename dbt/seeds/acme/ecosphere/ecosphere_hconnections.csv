@@ -1,0 +1,3 @@
+id,building_uuid,name,description,short_name,original_id_in_source,asset_type,manufacturer,owner,state,capacity,efficiency,full_load_hours,operational_hours,commissioning_date,decommissioning_date,installation_duration,technical_lifetime,surface_area,aggregated,aggregation_count
+hconn-0b7db046-001,a5667b60-0b35-453d-a9ab-da3322b8c5f6,HConnection Bedrijfspand,District heating connection for Bedrijfspand,HCON-001,hconn-0b7db046-001,Heat Meter,Kamstrup,Vattenfall,OPERATIONAL,50000.0,0.92,2000,8760,2019-01-15,,10.0,25.0,,false,1
+hconn-6ba13993-001,6ba13993-c8b6-42db-ab28-315ba78cb875,HConnection Kantoor,District heating connection for office building,HCON-002,hconn-6ba13993-001,Heat Meter,Kamstrup,Vattenfall,OPERATIONAL,30000.0,0.90,1500,8760,2020-03-15,,10.0,25.0,,false,1

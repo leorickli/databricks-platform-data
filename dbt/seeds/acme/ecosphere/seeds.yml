@@ -1,0 +1,523 @@
+version: 2
+
+seeds:
+  - name: ecosphere_buildings
+    description: |
+      ESDL-aligned dimension seed for Building objects in the Ecosphere pipeline.
+      Contains physical building attributes (type, energy label, floor area, etc.)
+      that serve as the dimension for joining with all Ecosphere telemetry fact tables
+      via building_uuid. Source of truth is the ESDL Building object definition.
+    config:
+      schema: gold
+      database: "{{ var('acme_catalog', 'acme_dev') }}"
+      column_types:
+        id: string
+        original_id_in_source: string
+        building_year: int
+        energy_index: double
+        floor_area: double
+        number_of_floors: int
+        surface_area: int
+        installation_duration: double
+        technical_lifetime: double
+        aggregated: boolean
+        aggregation_count: int
+    columns:
+      - name: id
+        description: "Unique identifier for the building - matches building_uuid in silver tables (ESDL: id)"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Human-readable building name (ESDL: name)"
+        tests:
+          - not_null
+      - name: description
+        description: "Extended description of the building (ESDL: description)"
+      - name: short_name
+        description: "Short name or code for the building (ESDL: short_name)"
+      - name: original_id_in_source
+        description: "Original identifier from the Ecosphere source system (ESDL: original_id_in_source)"
+      - name: type
+        description: "Building type enum (e.g., RESIDENTIAL, OFFICE, UTILITY) (ESDL: BuildingTypeEnum)"
+      - name: building_year
+        description: "Year of construction (ESDL: building_year)"
+      - name: energy_label
+        description: "Dutch energy performance label (A/B/C/D/E/F/G) (ESDL: EnergyLabelEnum)"
+      - name: energy_index
+        description: "Energy performance index - lower is better (ESDL: energy_index)"
+      - name: floor_area
+        description: "Total floor area in m² (ESDL: floor_area)"
+      - name: number_of_floors
+        description: "Number of floors in the building (ESDL: number_of_floors)"
+      - name: asset_type
+        description: "Model number or type designation from manufacturer (ESDL: asset_type)"
+      - name: manufacturer
+        description: "Manufacturer or developer of the building (ESDL: manufacturer)"
+      - name: owner
+        description: "Owner of the building (ESDL: owner)"
+      - name: state
+        description: "Asset operational state (OPERATIONAL, PLANNED, DISABLED) (ESDL: AssetStateEnum)"
+        tests:
+          - accepted_values:
+              values: ['OPERATIONAL', 'PLANNED', 'DISABLED', 'REMOVED']
+      - name: surface_area
+        description: "Ground surface area in m² (ESDL: surface_area)"
+      - name: commissioning_date
+        description: "Date the building was commissioned (ESDL: commissioning_date)"
+      - name: decommissioning_date
+        description: "Date the building was or will be decommissioned (ESDL: decommissioning_date)"
+      - name: installation_duration
+        description: "Duration of installation in days (ESDL: installation_duration)"
+      - name: technical_lifetime
+        description: "Expected technical lifetime in years (ESDL: technical_lifetime)"
+      - name: aggregated
+        description: "Whether this record represents an aggregation of multiple buildings (ESDL: aggregated)"
+      - name: aggregation_count
+        description: "Number of buildings aggregated into this record (ESDL: aggregation_count)"
+
+  - name: ecosphere_econnections
+    description: |
+      ESDL-aligned dimension seed for EConnection (Electricity Connection) objects in the Ecosphere pipeline.
+      Represents the electricity demarcation point between the building and the grid (smart meter).
+      Attributes describe the physical connection characteristics (EAN code, contracted power, etc.).
+      Joins with fact tables: ecosphere_batch_econnection_history, ecosphere_batch_econnection_meterreadings.
+    config:
+      schema: gold
+      database: "{{ var('acme_catalog', 'acme_dev') }}"
+      column_types:
+        id: string
+        ean_code: string
+        original_id_in_source: string
+        contract_power: double
+        surface_area: int
+        installation_duration: double
+        technical_lifetime: double
+        aggregated: boolean
+        aggregation_count: int
+    columns:
+      - name: id
+        description: "Unique identifier for the electricity connection (ESDL: id)"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Human-readable connection name (ESDL: name)"
+        tests:
+          - not_null
+      - name: description
+        description: "Extended description of the electricity connection (ESDL: description)"
+      - name: short_name
+        description: "Short name or code (ESDL: short_name)"
+      - name: original_id_in_source
+        description: "Original identifier from the Ecosphere source system (ESDL: original_id_in_source)"
+      - name: ean_code
+        description: "European Article Number - unique grid connection identifier (18 digits) (ESDL: ean_code)"
+      - name: contract_power
+        description: "Contracted maximum capacity in kW (ESDL: contract_power)"
+      - name: asset_type
+        description: "Meter model/type (ESDL: asset_type)"
+      - name: manufacturer
+        description: "Meter manufacturer (ESDL: manufacturer)"
+      - name: owner
+        description: "Grid operator or owner (ESDL: owner)"
+      - name: state
+        description: "Asset state (OPERATIONAL, PLANNED, DISABLED) (ESDL: AssetStateEnum)"
+        tests:
+          - accepted_values:
+              values: ['OPERATIONAL', 'PLANNED', 'DISABLED', 'REMOVED']
+      - name: surface_area
+        description: "Installation surface area in m² (ESDL: surface_area)"
+      - name: commissioning_date
+        description: "Date the connection was commissioned (ESDL: commissioning_date)"
+      - name: decommissioning_date
+        description: "Date the connection was or will be decommissioned (ESDL: decommissioning_date)"
+      - name: installation_duration
+        description: "Installation duration in days (ESDL: installation_duration)"
+      - name: technical_lifetime
+        description: "Expected technical lifetime in years (ESDL: technical_lifetime)"
+      - name: aggregated
+        description: "Whether this record is an aggregation (ESDL: aggregated)"
+      - name: aggregation_count
+        description: "Number of connections aggregated (ESDL: aggregation_count)"
+
+  - name: ecosphere_hconnections
+    description: |
+      ESDL-aligned dimension seed for HConnection (Heat Connection) objects in the Ecosphere pipeline.
+      Represents the district heating connection for a building.
+      Attributes describe capacity, efficiency, and operational characteristics.
+      Joins with fact tables: ecosphere_batch_hconnection_history, ecosphere_batch_hconnection_meterreadings.
+    config:
+      schema: gold
+      database: "{{ var('acme_catalog', 'acme_dev') }}"
+      column_types:
+        id: string
+        original_id_in_source: string
+        capacity: double
+        efficiency: double
+        full_load_hours: int
+        operational_hours: int
+        installation_duration: double
+        technical_lifetime: double
+        surface_area: int
+        aggregated: boolean
+        aggregation_count: int
+    columns:
+      - name: id
+        description: "Unique identifier for the heat connection (ESDL: id)"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Human-readable connection name (ESDL: name)"
+        tests:
+          - not_null
+      - name: description
+        description: "Extended description (ESDL: description)"
+      - name: short_name
+        description: "Short name or code (ESDL: short_name)"
+      - name: original_id_in_source
+        description: "Original identifier from the Ecosphere source system (ESDL: original_id_in_source)"
+      - name: asset_type
+        description: "Heat meter model/type (ESDL: asset_type)"
+      - name: manufacturer
+        description: "Meter manufacturer (ESDL: manufacturer)"
+      - name: owner
+        description: "Heat network operator or owner (ESDL: owner)"
+      - name: state
+        description: "Asset state (OPERATIONAL, PLANNED, DISABLED) (ESDL: AssetStateEnum)"
+        tests:
+          - accepted_values:
+              values: ['OPERATIONAL', 'PLANNED', 'DISABLED', 'REMOVED']
+      - name: capacity
+        description: "Transport capacity in Watts (ESDL: capacity)"
+      - name: efficiency
+        description: "Connection efficiency ratio (ESDL: efficiency)"
+      - name: full_load_hours
+        description: "Annual full-load hours (ESDL: full_load_hours)"
+      - name: operational_hours
+        description: "Hours per year in operation (ESDL: operational_hours)"
+      - name: commissioning_date
+        description: "Date the connection was commissioned (ESDL: commissioning_date)"
+      - name: decommissioning_date
+        description: "Date the connection was or will be decommissioned (ESDL: decommissioning_date)"
+      - name: installation_duration
+        description: "Installation duration in days (ESDL: installation_duration)"
+      - name: technical_lifetime
+        description: "Expected technical lifetime in years (ESDL: technical_lifetime)"
+      - name: surface_area
+        description: "Installation surface area in m² (ESDL: surface_area)"
+      - name: aggregated
+        description: "Whether this record is an aggregation (ESDL: aggregated)"
+      - name: aggregation_count
+        description: "Number of connections aggregated (ESDL: aggregation_count)"
+
+  - name: ecosphere_gconnections
+    description: |
+      ESDL-aligned dimension seed for GConnection (Gas Connection) objects in the Ecosphere pipeline.
+      Represents the natural gas grid connection for a building.
+      Attributes describe capacity, efficiency, and operational characteristics.
+      Joins with fact table: ecosphere_batch_gconnection_history.
+    config:
+      schema: gold
+      database: "{{ var('acme_catalog', 'acme_dev') }}"
+      column_types:
+        id: string
+        original_id_in_source: string
+        capacity: double
+        efficiency: double
+        full_load_hours: int
+        operational_hours: int
+        installation_duration: double
+        technical_lifetime: double
+        surface_area: int
+        aggregated: boolean
+        aggregation_count: int
+    columns:
+      - name: id
+        description: "Unique identifier for the gas connection (ESDL: id)"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Human-readable connection name (ESDL: name)"
+        tests:
+          - not_null
+      - name: description
+        description: "Extended description (ESDL: description)"
+      - name: short_name
+        description: "Short name or code (ESDL: short_name)"
+      - name: original_id_in_source
+        description: "Original identifier from the Ecosphere source system (ESDL: original_id_in_source)"
+      - name: asset_type
+        description: "Gas meter model/type (ESDL: asset_type)"
+      - name: manufacturer
+        description: "Meter manufacturer (ESDL: manufacturer)"
+      - name: owner
+        description: "Gas grid operator or owner (ESDL: owner)"
+      - name: state
+        description: "Asset state (OPERATIONAL, PLANNED, DISABLED) (ESDL: AssetStateEnum)"
+        tests:
+          - accepted_values:
+              values: ['OPERATIONAL', 'PLANNED', 'DISABLED', 'REMOVED']
+      - name: capacity
+        description: "Transport capacity in m³/h or Watts (ESDL: capacity)"
+      - name: efficiency
+        description: "Connection efficiency ratio (ESDL: efficiency)"
+      - name: full_load_hours
+        description: "Annual full-load hours (ESDL: full_load_hours)"
+      - name: operational_hours
+        description: "Hours per year in operation (ESDL: operational_hours)"
+      - name: commissioning_date
+        description: "Date the connection was commissioned (ESDL: commissioning_date)"
+      - name: decommissioning_date
+        description: "Date the connection was or will be decommissioned (ESDL: decommissioning_date)"
+      - name: installation_duration
+        description: "Installation duration in days (ESDL: installation_duration)"
+      - name: technical_lifetime
+        description: "Expected technical lifetime in years (ESDL: technical_lifetime)"
+      - name: surface_area
+        description: "Installation surface area in m² (ESDL: surface_area)"
+      - name: aggregated
+        description: "Whether this record is an aggregation (ESDL: aggregated)"
+      - name: aggregation_count
+        description: "Number of connections aggregated (ESDL: aggregation_count)"
+
+  - name: ecosphere_waterconnections
+    description: |
+      ESDL-aligned dimension seed for WaterConnection objects in the Ecosphere pipeline.
+      Represents the water supply connection for a building.
+      Attributes describe capacity, efficiency, and operational characteristics.
+      Joins with fact tables: ecosphere_batch_waterconnection_history, ecosphere_batch_waterconnection_meterreadings.
+    config:
+      schema: gold
+      database: "{{ var('acme_catalog', 'acme_dev') }}"
+      column_types:
+        id: string
+        original_id_in_source: string
+        capacity: double
+        efficiency: double
+        full_load_hours: int
+        operational_hours: int
+        installation_duration: double
+        technical_lifetime: double
+        surface_area: int
+        aggregated: boolean
+        aggregation_count: int
+    columns:
+      - name: id
+        description: "Unique identifier for the water connection (ESDL: id)"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Human-readable connection name (ESDL: name)"
+        tests:
+          - not_null
+      - name: description
+        description: "Extended description (ESDL: description)"
+      - name: short_name
+        description: "Short name or code (ESDL: short_name)"
+      - name: original_id_in_source
+        description: "Original identifier from the Ecosphere source system (ESDL: original_id_in_source)"
+      - name: asset_type
+        description: "Water meter model/type (ESDL: asset_type)"
+      - name: manufacturer
+        description: "Meter manufacturer (ESDL: manufacturer)"
+      - name: owner
+        description: "Water utility operator or owner (ESDL: owner)"
+      - name: state
+        description: "Asset state (OPERATIONAL, PLANNED, DISABLED) (ESDL: AssetStateEnum)"
+        tests:
+          - accepted_values:
+              values: ['OPERATIONAL', 'PLANNED', 'DISABLED', 'REMOVED']
+      - name: capacity
+        description: "Flow capacity (ESDL: capacity)"
+      - name: efficiency
+        description: "Connection efficiency ratio (ESDL: efficiency)"
+      - name: full_load_hours
+        description: "Annual full-load hours (ESDL: full_load_hours)"
+      - name: operational_hours
+        description: "Hours per year in operation (ESDL: operational_hours)"
+      - name: commissioning_date
+        description: "Date the connection was commissioned (ESDL: commissioning_date)"
+      - name: decommissioning_date
+        description: "Date the connection was or will be decommissioned (ESDL: decommissioning_date)"
+      - name: installation_duration
+        description: "Installation duration in days (ESDL: installation_duration)"
+      - name: technical_lifetime
+        description: "Expected technical lifetime in years (ESDL: technical_lifetime)"
+      - name: surface_area
+        description: "Installation surface area in m² (ESDL: surface_area)"
+      - name: aggregated
+        description: "Whether this record is an aggregation (ESDL: aggregated)"
+      - name: aggregation_count
+        description: "Number of connections aggregated (ESDL: aggregation_count)"
+
+  - name: ecosphere_batteries
+    description: |
+      ESDL-aligned dimension seed for Battery objects in the Ecosphere pipeline.
+      Represents electrical energy storage systems (BESS) installed at Ecosphere buildings.
+      Attributes describe storage capacity, charge/discharge rates, efficiency, and lifecycle characteristics.
+      Joins with fact table: ecosphere_batch_battery (State of Charge telemetry).
+    config:
+      schema: gold
+      database: "{{ var('acme_catalog', 'acme_dev') }}"
+      column_types:
+        id: string
+        original_id_in_source: string
+        capacity: double
+        max_charge_rate: double
+        max_discharge_rate: double
+        charge_efficiency: double
+        discharge_efficiency: double
+        self_discharge_rate: double
+        fill_level: double
+        max_charge_discharge_cycles: int
+        power_factor: double
+        installation_duration: double
+        technical_lifetime: double
+        surface_area: int
+        aggregated: boolean
+        aggregation_count: int
+    columns:
+      - name: id
+        description: "Unique identifier for the battery system (ESDL: id)"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Human-readable battery system name (ESDL: name)"
+        tests:
+          - not_null
+      - name: description
+        description: "Extended description of the battery system (ESDL: description)"
+      - name: short_name
+        description: "Short name or code (ESDL: short_name)"
+      - name: original_id_in_source
+        description: "Original identifier from the Ecosphere source system (ESDL: original_id_in_source)"
+      - name: asset_type
+        description: "Battery technology type (e.g., Li-Ion BESS) (ESDL: asset_type)"
+      - name: manufacturer
+        description: "Battery manufacturer (ESDL: manufacturer)"
+      - name: owner
+        description: "Owner of the battery system (ESDL: owner)"
+      - name: state
+        description: "Asset state (OPERATIONAL, PLANNED, DISABLED) (ESDL: AssetStateEnum)"
+        tests:
+          - accepted_values:
+              values: ['OPERATIONAL', 'PLANNED', 'DISABLED', 'REMOVED']
+      - name: capacity
+        description: "Usable storage capacity in kWh (ESDL: capacity)"
+      - name: max_charge_rate
+        description: "Maximum charging power in Watts (ESDL: max_charge_rate)"
+      - name: max_discharge_rate
+        description: "Maximum discharging power in Watts (ESDL: max_discharge_rate)"
+      - name: charge_efficiency
+        description: "Round-trip charge efficiency ratio 0-1 (ESDL: charge_efficiency)"
+      - name: discharge_efficiency
+        description: "Round-trip discharge efficiency ratio 0-1 (ESDL: discharge_efficiency)"
+      - name: self_discharge_rate
+        description: "Self-discharge rate in J/s or Watts (ESDL: self_discharge_rate)"
+      - name: fill_level
+        description: "Initial state of charge as ratio 0-1 (ESDL: fill_level)"
+      - name: max_charge_discharge_cycles
+        description: "Rated maximum number of charge/discharge cycles (ESDL: max_charge_discharge_cycles)"
+      - name: power_factor
+        description: "Power factor of the battery inverter (ESDL: power_factor)"
+      - name: commissioning_date
+        description: "Date the battery was commissioned (ESDL: commissioning_date)"
+      - name: decommissioning_date
+        description: "Date the battery was or will be decommissioned (ESDL: decommissioning_date)"
+      - name: installation_duration
+        description: "Installation duration in days (ESDL: installation_duration)"
+      - name: technical_lifetime
+        description: "Expected technical lifetime in years (ESDL: technical_lifetime)"
+      - name: surface_area
+        description: "Installation footprint in m² (ESDL: surface_area)"
+      - name: aggregated
+        description: "Whether this record represents an aggregated battery system (ESDL: aggregated)"
+      - name: aggregation_count
+        description: "Number of battery units aggregated (ESDL: aggregation_count)"
+
+  - name: ecosphere_ev_charging_stations
+    description: |
+      ESDL-aligned dimension seed for EVChargingStation objects in the Ecosphere pipeline.
+      Represents electric vehicle charging stations installed at Ecosphere buildings.
+      Attributes describe power capacity, connector count, efficiency, and operational characteristics.
+      Joins with fact table: ecosphere_batch_ev_charging_station (socket status telemetry).
+    config:
+      schema: gold
+      database: "{{ var('acme_catalog', 'acme_dev') }}"
+      column_types:
+        id: string
+        original_id_in_source: string
+        power: double
+        power_factor: double
+        full_load_hours: int
+        operational_hours: int
+        number_of_connectors: int
+        efficiency: double
+        installation_duration: double
+        technical_lifetime: double
+        surface_area: int
+        aggregated: boolean
+        aggregation_count: int
+    columns:
+      - name: id
+        description: "Unique identifier for the EV charging station (ESDL: id)"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Human-readable charging station name (ESDL: name)"
+        tests:
+          - not_null
+      - name: description
+        description: "Extended description (ESDL: description)"
+      - name: short_name
+        description: "Short name or code (ESDL: short_name)"
+      - name: original_id_in_source
+        description: "Original identifier from the Ecosphere source system (ESDL: original_id_in_source)"
+      - name: asset_type
+        description: "Charger type (e.g., AC Charger, DC Fast Charger) (ESDL: asset_type)"
+      - name: manufacturer
+        description: "Charger manufacturer (ESDL: manufacturer)"
+      - name: owner
+        description: "Owner of the charging station (ESDL: owner)"
+      - name: state
+        description: "Asset state (OPERATIONAL, PLANNED, DISABLED) (ESDL: AssetStateEnum)"
+        tests:
+          - accepted_values:
+              values: ['OPERATIONAL', 'PLANNED', 'DISABLED', 'REMOVED']
+      - name: cons_type
+        description: "Consumer type - PRIMARY or FINAL energy consumer (ESDL: ConsTypeEnum)"
+        tests:
+          - accepted_values:
+              values: ['PRIMARY', 'FINAL']
+      - name: power
+        description: "Maximum charging power per connector in Watts (ESDL: power)"
+      - name: power_factor
+        description: "Power factor of the charger (ESDL: power_factor)"
+      - name: full_load_hours
+        description: "Annual hours at full charging load (ESDL: full_load_hours)"
+      - name: operational_hours
+        description: "Hours per year the charger is operational (ESDL: operational_hours)"
+      - name: number_of_connectors
+        description: "Number of charging connectors (sockets) (ESDL: number_of_connectors)"
+      - name: efficiency
+        description: "Charging efficiency as percentage (ESDL: efficiency)"
+      - name: commissioning_date
+        description: "Date the charger was commissioned (ESDL: commissioning_date)"
+      - name: decommissioning_date
+        description: "Date the charger was or will be decommissioned (ESDL: decommissioning_date)"
+      - name: installation_duration
+        description: "Installation duration in days (ESDL: installation_duration)"
+      - name: technical_lifetime
+        description: "Expected technical lifetime in years (ESDL: technical_lifetime)"
+      - name: surface_area
+        description: "Installation footprint in m² (ESDL: surface_area)"
+      - name: aggregated
+        description: "Whether this record is an aggregation of multiple chargers (ESDL: aggregated)"
+      - name: aggregation_count
+        description: "Number of chargers aggregated (ESDL: aggregation_count)"

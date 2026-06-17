@@ -1,0 +1,65 @@
+connector,dis,geoAddr,geoStreet,geoCity,geoPostalCode,geoCountry,tz,ean,dapId,sleutel,meter_status,entity,klantnummer,type
+wattflow_api,Argonautenweg 57 BIJ,Argonautenweg 57 BIJ,Argonautenweg 57,Rotterdam,3054RP,Netherlands,Europe/Amsterdam,871689260011945210,80506,50594511,active,B&T,50009511,
+wattflow_api,Hazelaarweg 100 Bij,Hazelaarweg 100 Bij,Hazelaarweg 100,Rotterdam,3053PM,Netherlands,Europe/Amsterdam,871689260011746329,76866,56621452,inactive,B&T,50009511,
+wattflow_api,Koningin Wilhelminaplein 1,Koningin Wilhelminaplein 1,Koningin Wilhelminaplein 1,Amsterdam,1062HG,Netherlands,Europe/Amsterdam,871685920004048543,85768,59868668,inactive,B&T Speciale Projecten,124325,
+wattflow_api,Orionstraat 235 BIJ,Orionstraat 235 BIJ,Orionstraat 235,'s-Gravenhage,2516AS,Netherlands,Europe/Amsterdam,871689260012433310,87649,63398185,active,B&T Speciale Projecten,124325,
+wattflow_api,Wegastraat 67 BIJ,Wegastraat 67 BIJ,Wegastraat 67,'s-Gravenhage,2516AN,Netherlands,Europe/Amsterdam,871689260012411691,97293,63086626,active,B&T Speciale Projecten,5013675,
+wattflow_api,Plantijnweg 32,Plantijnweg 32,Plantijnweg 32,Culemborg,4104BB,Netherlands,Europe/Amsterdam,871687120000023324,54675,54077063,active,Concernhuisvesting,50009130,Kantoor
+wattflow_api,Plantijnweg 32,Plantijnweg 32,Plantijnweg 32,Culemborg,4104BB,Netherlands,Europe/Amsterdam,871687120000023324,54675,54076993,active,Concernhuisvesting,50009130,Kantoor
+wattflow_api,Plantijnweg 32,Plantijnweg 32,Plantijnweg 32,Culemborg,4104BB,Netherlands,Europe/Amsterdam,871687120000023324,54675,54076990,active,Concernhuisvesting,50009130,Kantoor
+wattflow_api,De Serpeling 120,De Serpeling 120,De Serpeling 120,Lelystad,8219PZ,Netherlands,Europe/Amsterdam,871687110000967926,83480,50624190,inactive,BES,126892,Kantoor
+wattflow_api,De Serpeling 120,De Serpeling 120,De Serpeling 120,Lelystad,8219PZ,Netherlands,Europe/Amsterdam,871687120000061975,96737,73017642,active,BES,126892,Kantoor
+wattflow_api,De Steenbok 15,De Steenbok 15,De Steenbok 15,s-Hertogenbosch,5215MG,Netherlands,Europe/Amsterdam,871687910000065475,89385,M63508311,active,BES,126892,Kantoor
+wattflow_api,De Steenbok 15,De Steenbok 15,De Steenbok 15,s-Hertogenbosch,5215MG,Netherlands,Europe/Amsterdam,871687910000475441,92511,63508312,active,BES,126892,Kantoor
+wattflow_api,De Steenbok 15,De Steenbok 15,De Steenbok 15,s-Hertogenbosch,5215MG,Netherlands,Europe/Amsterdam,871687910000475458,96495,63508311,active,BES,126892,Kantoor
+wattflow_api,Den Hulst 102,Den Hulst 102,Den Hulst 102,NIEUWLEUSEN,7711GS,Netherlands,Europe/Amsterdam,871694831000416077,83507,43333524,active,BES,126892,Kantoor
+wattflow_api,Den Hulst 102,Den Hulst 102,Den Hulst 102,NIEUWLEUSEN,7711GS,Netherlands,Europe/Amsterdam,871694831000416077,83507,43621330,active,BES,126892,Kantoor
+wattflow_api,Den Hulst 102,Den Hulst 102,Den Hulst 102,NIEUWLEUSEN,7711GS,Netherlands,Europe/Amsterdam,871694831000416077,83507,54828508,active,BES,126892,Kantoor
+wattflow_api,Den Hulst 110,Den Hulst 110,Den Hulst 110,NIEUWLEUSEN,7711GS,Netherlands,Europe/Amsterdam,871694831000080872,83766,54631656,active,BES,126892,Kantoor
+wattflow_api,Elsrijkdreef 199 A,Elsrijkdreef 199 A,Elsrijkdreef 199,Amsterdam,1103MJ,Netherlands,Europe/Amsterdam,871685900041068209,89263,63508328,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,Gouda,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631172,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,Gouda,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631173,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,GOUDA,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631174,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,GOUDA,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631175,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,GOUDA,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631176,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,GOUDA,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631177,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,GOUDA,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631178,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,GOUDA,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,54631179,active,BES,126892,Kantoor
+wattflow_api,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,H.J.Nederhorststraat 1,GOUDA,2801SC,Netherlands,Europe/Amsterdam,871692150000024054,83498,27020139,active,BES,126892,Kantoor
+wattflow_api,Jeverweg 16 T/M 18,Jeverweg 16 T/M 18,Jeverweg 16-18,Groningen,9723JE,Netherlands,Europe/Amsterdam,871694831000211504,83506,56621322,active,BES,126892,Kantoor
+wattflow_api,Jeverweg 16 T/M 18,Jeverweg 16 T/M 18,Jeverweg 16-18,Groningen,9723JE,Netherlands,Europe/Amsterdam,871694831000211504,83506,57347714,active,BES,126892,Kantoor
+wattflow_api,Jeverweg 16 T/M 18,Jeverweg 16 T/M 18,Jeverweg 16-18,Groningen,9723JE,Netherlands,Europe/Amsterdam,871694831000211504,83506,57347716,active,BES,126892,Kantoor
+wattflow_api,Kilkade 39,Kilkade 39,Kilkade 39,Dordrecht,3316BC,Netherlands,Europe/Amsterdam,871689260013155471,95664,54636290,active,BES,126892,Kantoor
+wattflow_api,Kilkade 53,Kilkade 53,Kilkade 53,Dordrecht,3316BC,Netherlands,Europe/Amsterdam,871689276000060611,83494,54077184,active,BES,126892,Kantoor
+wattflow_api,Kilkade 53,Kilkade 53,Kilkade 53,Dordrecht,3316BC,Netherlands,Europe/Amsterdam,871689276000060611,83494,54077180,active,BES,126892,Kantoor
+wattflow_api,Kilkade 53,Kilkade 53,Kilkade 53,Dordrecht,3316BC,Netherlands,Europe/Amsterdam,871689290602500320,87952,33201979,active,BES,126892,Kantoor
+wattflow_api,Marowijne 34,Marowijne 34,Marowijne 34,Apeldoorn,7333PJ,Netherlands,Europe/Amsterdam,871687120000032982,83481,54629872,active,BES,126892,Kantoor
+wattflow_api,Molenstraat 60,Molenstraat 60,Molenstraat 60,ZWAMMERDAM,2471AB,Netherlands,Europe/Amsterdam,871690910008547670,83497,53177620,active,BES,126892,Kantoor
+wattflow_api,Molenstraat 63,Molenstraat 63,Molenstraat 63,ZWAMMERDAM,2471AA,Netherlands,Europe/Amsterdam,871690910000009350,83496,38485684,active,BES,126892,Kantoor
+wattflow_api,Molenstraat 63,Molenstraat 63,Molenstraat 63,ZWAMMERDAM,2471AA,Netherlands,Europe/Amsterdam,871687140006918639,87948,27019472,active,BES,126892,Kantoor
+wattflow_api,Proostwetering 31,Proostwetering 31,Proostwetering 31,Utrecht,3543AB,Netherlands,Europe/Amsterdam,871687400009183091,83490,50676492,active,BES,126892,Kantoor
+wattflow_api,Proostwetering 31,Proostwetering 31,Proostwetering 31,Utrecht,3543AB,Netherlands,Europe/Amsterdam,871687400009183091,83490,54077197,active,BES,126892,Kantoor
+wattflow_api,Von Geusaustraat 195 BIJ,Von Geusaustraat 195 BIJ,Von Geusaustraat 195,VOORBURG,2274RJ,Netherlands,Europe/Amsterdam,871689260012252874,83705,59868927,active,Infra Rail,5007117,
+wattflow_api,Tasveld 16,Tasveld 16,Tasveld 16,MONTFOORT,3417XS,Netherlands,Europe/Amsterdam,871687400008460148,70526,98389752,active,Infra Telecom,113997,
+wattflow_api,Oosterengweg 38,Oosterengweg 38,Oosterengweg 38,Unknown,,Netherlands,Europe/Amsterdam,871685900041044883,71511,56218582,inactive,Services Nederland,5007374,
+wattflow_api,Plantijnweg 32,Plantijnweg 32,Plantijnweg 32,Unknown,,Netherlands,Europe/Amsterdam,871687120000023324,54675,54077063,inactive,Services Nederland,5007374,
+wattflow_api,Plantijnweg 32,Plantijnweg 32,Plantijnweg 32,Unknown,,Netherlands,Europe/Amsterdam,871687120000023324,54675,54076993,inactive,Services Nederland,5007374,
+wattflow_api,Plantijnweg 32,Plantijnweg 32,Plantijnweg 32,Unknown,,Netherlands,Europe/Amsterdam,871687120000023324,54675,54076990,inactive,Services Nederland,5007374,
+wattflow_api,Stadionweg 23,Stadionweg 23,Stadionweg 23,ROTTERDAM,3077AN,Netherlands,Europe/Amsterdam,871689276000030706,85677,54633316,active,Services Nederland,101263,
+wattflow_api,Dijkmeerlaan 551,Dijkmeerlaan 551,Dijkmeerlaan 551,Amsterdam,1096DE,Netherlands,Europe/Amsterdam,871685920004378541,92135,67235393,active,Wonen,126292,
+wattflow_api,Dijkmeerlaan 551,Dijkmeerlaan 551,Dijkmeerlaan 551,Amsterdam,1096DE,Netherlands,Europe/Amsterdam,871685920004378541,92135,67235442,inactive,Wonen,126292,
+wattflow_api,Euryzakade 401 CVZ,Euryzakade 401 CVZ,Euryzakade 401,Zwijndrecht,3331MM,Netherlands,Europe/Amsterdam,871689260013028706,91786,67235478,active,Wonen,126292,
+wattflow_api,H.J.E. Wenckebachweg 1692,H.J.E. Wenckebachweg 1692,H.J.E. Wenckebachweg 1692,AMSTERDAM,1096DE,Netherlands,Europe/Amsterdam,871685920003789768,77095,55695924,active,Wonen,126292,
+wattflow_api,de Eik 56 BIJ,de Eik 56 BIJ,de Eik 56,HELLEVOETSLUIS,3224TC,Netherlands,Europe/Amsterdam,871689260012516082,87926,63398280,inactive,Wonen Bouw op Maat,124996,
+wattflow_api,Hartenruststraat 6 BIJ,Hartenruststraat 6 BIJ,Hartenruststraat 6,ROTTERDAM,3036KX,Netherlands,Europe/Amsterdam,871689260013005899,90827,66022558,active,Wonen Bouw op Maat,124996,
+wattflow_api,Van Embdenstrat 2 TA,Van Embdenstrat 2 TA,Van Embdenstrat 2,DELFT,2628ZE,Netherlands,Europe/Amsterdam,871688660012152920,90949,55665323,active,Wonen Bouw op Maat,124996,
+wattflow_api,Vreeswijkpad 6,Vreeswijkpad 6,Vreeswijkpad 6,AMSTERDAM,1106DV,Netherlands,Europe/Amsterdam,871685920004381039,91169,56621561,active,Wonen Bouw op Maat,124996,
+wattflow_api,Akulaan 2,Akulaan 2,Akulaan 2,EDE GLD,6717XN,Netherlands,Europe/Amsterdam,871687110004007611,80505,56621216,active,Wonen,125819,
+wattflow_api,Ambachtsherenpad 8 BIJ,Ambachtsherenpad 8 BIJ,Ambachtsherenpad 8,ZOETERMEER,2722BS,Netherlands,Europe/Amsterdam,871688660012398397,86059,63087252,inactive,Wonen,125819,
+wattflow_api,Bongerdkade 32,Bongerdkade 32,Bongerdkade 32,AMSTERDAM,1036LZ,Netherlands,Europe/Amsterdam,871685920003998443,80330,54631808,active,Wonen,125819,
+wattflow_api,Mary van der Sluisstraat 428,Mary van der Sluisstraat 428,Mary van der Sluisstraat 428,Amsterdam,1095ME,Netherlands,Europe/Amsterdam,871685920004053639,81070,59867776,active,Wonen,125819,
+wattflow_api,Zuider IJdijk 76 A,Zuider IJdijk 76 A,Zuider IJdijk 76,AMSTERDAM,1095KN,Netherlands,Europe/Amsterdam,871685920004053752,82174,98389761,active,Wonen,125819,
+wattflow_api,2e Rosestraat 11,2e Rosestraat 11,2e Rosestraat 11,ROTTERDAM,3072JK,Netherlands,Europe/Amsterdam,871689260012250047,91960,67235473,inactive,Wonen,50009886,
+wattflow_api,2e Rosestraat 7,2e Rosestraat 7,2e Rosestraat 7,ROTTERDAM,3072JK,Netherlands,Europe/Amsterdam,871689260012250054,91961,67235472,inactive,Wonen,50009886,
+wattflow_api,G.J. Scheurleerpad 8,G.J. Scheurleerpad 8,G.J. Scheurleerpad 8,AMSTERDAM,1025WM,Netherlands,Europe/Amsterdam,871685920004541433,92237,37675873,active,Wonen,50009886,
+wattflow_api,Transvaalstraat 9,Transvaalstraat 9,Transvaalstraat 9,HAARLEM,2022ZA,Netherlands,Europe/Amsterdam,871685920004481388,95231,99848730,active,Wonen,50009886,

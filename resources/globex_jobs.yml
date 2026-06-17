@@ -1,0 +1,513 @@
+resources:
+  jobs:
+    globex_kafka_inverters_stream_job:
+      name: globex kafka inverters stream job
+      description: >-
+        Streaming pipeline for Kafka inverters topic (Haystack ontology-compliant):
+
+        1. b01_ddl_statements: Creates the Delta tables first so the job will not return an error in case a downstream task starts first.
+
+        2. s02_ingest_to_land: Extracts JSON data from the Kafka tud_gv_Inverters topic and writes it into the land layer.
+
+        3. s03_process_to_bronze: Transforms the JSON data in tabular parquet format and becomes the source of truth.
+
+        4. s04_process_to_silver: Curates the data by extracting the right values from the "measurements" field and transforms to Haystack-compliant camelCase schema (id, idSite, W, WH, Hz, PhVphA, TmpCab, etc.).
+
+        5. s05_write2kinesis_bronze: Exports bronze layer data to dpx-kinesis-globex-bronze Kinesis stream for external consumption.
+
+        6. s06_write2kinesis_silver: Exports silver layer data to dpx-kinesis-globex-silver Kinesis stream for external consumption.
+
+        7. s07_source_data_monitoring: Monitors the pipeline and sends an email alert if no new data arrives within a 15-minute period.
+
+        8. b11_update_streaming_connection_metadata: Runs every 15 minutes to query the silver table and append connection status records to metadata.connection_status for frontend dashboard integration.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      continuous:
+        pause_status: PAUSED
+      tasks:
+        - task_key: b01_ddl_statements
+          notebook_task:
+            notebook_path: ../src/connectors/kafka_inverters/stream/b01_ddl_statements.py
+            source: WORKSPACE
+        - task_key: s02_ingest_to_land
+          notebook_task:
+            notebook_path: ../src/connectors/kafka_inverters/stream/s02_kafka2land.py
+            source: WORKSPACE
+          job_cluster_key: globex_kafka_python_311
+        - task_key: s03_process_to_bronze
+          notebook_task:
+            notebook_path: ../src/connectors/kafka_inverters/stream/s03_land2bronze.py
+            source: WORKSPACE
+          job_cluster_key: globex_kafka_python_311
+        - task_key: s04_process_to_silver
+          notebook_task:
+            notebook_path: ../src/connectors/kafka_inverters/stream/s04_bronze2silver.py
+            source: WORKSPACE
+          job_cluster_key: globex_kafka_python_311
+        - task_key: s05_write2kinesis_bronze
+          notebook_task:
+            notebook_path: ../src/connectors/kafka_inverters/stream/s05_bronze2kinesis.py
+            source: WORKSPACE
+          job_cluster_key: kinesis_operational_cluster
+        - task_key: s06_write2kinesis_silver
+          notebook_task:
+            notebook_path: ../src/connectors/kafka_inverters/stream/s06_silver2kinesis.py
+            source: WORKSPACE
+          job_cluster_key: kinesis_operational_cluster
+        - task_key: s07_source_data_monitoring
+          notebook_task:
+            notebook_path: ../src/connectors/kafka_inverters/stream/s07_source_data_monitoring.py
+            source: WORKSPACE
+          job_cluster_key: kinesis_operational_cluster
+        - task_key: b11_update_streaming_connection_metadata
+          notebook_task:
+            notebook_path: ../src/shared/b11_update_streaming_connection_metadata.py
+            base_parameters:
+              connector: kafka_inverters
+            source: WORKSPACE
+          job_cluster_key: globex_kafka_python_311
+      job_clusters:
+        - job_cluster_key: globex_kafka_python_311
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: eu-central-1a
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: m8g.xlarge
+            spark_env_vars:
+              PYSPARK_PYTHON: /databricks/python3/bin/python3
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: STANDARD
+            autoscale:
+              min_workers: 1
+              max_workers: 6
+        - job_cluster_key: kinesis_operational_cluster
+          new_cluster:
+            spark_version: ${var.spark_version}
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto
+              instance_profile_arn: arn:aws:iam::867344430965:instance-profile/dpx-databricks-data-access-profile
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: m8g.large
+            driver_node_type_id: m8g.xlarge
+            spark_env_vars:
+              PYSPARK_PYTHON: /databricks/python3/bin/python3
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            single_user_name: developer@example.com
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+      tags:
+        client: globex
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: stream
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.globex_catalog}
+        - name: secret_scope
+          default: globex_kafka_credentials
+        - name: volume_name
+          default: kafka_inverters_stream
+        - name: bronze_table_name
+          default: kafka_inverters_stream
+        - name: silver_table_name
+          default: kafka_inverters_stream
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    globex_solarflow_batch_job:
+      name: globex solarflow batch job
+      description: >-
+        Batch pipeline for Solarflow inverter (Plant 10318726, SN mjp0e6b0t5):
+
+        1. b01_api2land: Extracts energy data from Solarflow API and writes JSON files to land volume with filename pattern solarflow_{plant_id}_{device_sn}_{timestamp}.json.
+
+        2. b02_land2bronze: Processes JSON files, extracts plant_id and device_sn from filename, and creates device-specific bronze table (solarflow_mjp0e6b0t5_batch). No hardcoded mapping needed.
+
+        3. b03_bronze2silver: Transforms and enriches inverter telemetry data for silver layer.
+
+        4. b04_silver2gold: Applies business logic via dbt and creates gold fact table (f_solarflow_inverter_mjp0e6b0t5_batch).
+
+        5. b05_solarflow_devices: Writes device(s) source data in original format to land and writes transformed data in a dimension table in the gold layer.
+
+        6. b10_update_batch_connection_metadata: Reads connection_config rows for connector=solarflow_api and appends connection status records to metadata.connection_status for historical tracking.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      trigger:
+        pause_status: PAUSED
+        periodic:
+          interval: 1
+          unit: DAYS
+      tasks:
+        - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/solarflow/batch/b01_solarflow_api2land.py
+            source: WORKSPACE
+          max_retries: 5
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          timeout_seconds: 3600
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/solarflow/batch/b02_solarflow_land2bronze.py
+            source: WORKSPACE
+        - task_key: b05_solarflow_devices
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/solarflow/batch/b05_solarflow_devices.py
+            source: WORKSPACE
+          max_retries: 5
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          timeout_seconds: 3600
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+            - task_key: b05_solarflow_devices
+          notebook_task:
+            notebook_path: ../src/connectors/solarflow/batch/b03_solarflow_bronze2silver.py
+            source: WORKSPACE
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --select dpx --vars '{"dpx_catalog":"${var.dpx_catalog}"}' --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select tag:solarflow_batch --vars '{"globex_catalog":"${var.globex_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files
+            catalog: ${var.globex_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+        - task_key: b10_connection_status
+          depends_on:
+            - task_key: b04_silver2gold
+          notebook_task:
+            notebook_path: ../src/shared/b10_update_batch_connection_metadata.py
+            base_parameters:
+              catalog_name: ${var.globex_catalog}
+              connector: solarflow_api
+            source: WORKSPACE
+      tags:
+        client: globex
+        brand: solarflow
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.globex_catalog}
+        - name: secret_scope
+          default: globex_solarflow_api_creds
+        - name: volume_name
+          default: solarflow_inverters_batch
+        - name: bronze_table_name
+          default: solarflow_mjp0e6b0t5_batch
+        - name: silver_table_name
+          default: solarflow_mjp0e6b0t5_batch
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    globex_sunpeak_batch_job:
+      name: globex sunpeak batch job
+      description: >-
+        Batch pipeline for Sunpeak inverter (Site 58604, SN 7f181dc8-7c):
+
+        1. b01_api2land: Extracts inverter technical data from Sunpeak API and writes JSON files to land volume with filename pattern sunpeak_inverter_{site_id}_{serial_number}_{timestamp}.json.
+
+        2. b02_land2bronze: Processes JSON files and creates device-specific bronze table (sunpeak_7f181dc8_7c_batch) containing all inverter telemetry including totalActivePower and cumulative totalEnergy.
+
+        3. b03_bronze2silver: Enriches inverter data with metadata and creates silver table at 5-minute resolution.
+
+        4. b04_silver2gold: Calculates interval energy using LAG window functions on totalEnergy via dbt, aggregates to 15-minute intervals, and creates gold table (fact_sunpeak_7f181dc8_7c_batch).
+
+        5. b05_sunpeak_devices: Writes device(s) source data in original format to land and writes transformed data in a dimension table in the gold layer.
+
+        6. b10_update_batch_connection_metadata: Reads connection_config rows for connector=sunpeak_api and appends connection status records to metadata.connection_status for historical tracking.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      trigger:
+        pause_status: PAUSED
+        periodic:
+          interval: 1
+          unit: DAYS
+      tasks:
+        - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/sunpeak/batch/b01_sunpeak_api2land.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/sunpeak/batch/b02_sunpeak_land2bronze.py
+            source: WORKSPACE
+        - task_key: b05_sunpeak_devices
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/sunpeak/batch/b05_sunpeak_devices.py
+            source: WORKSPACE
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+            - task_key: b05_sunpeak_devices
+          notebook_task:
+            notebook_path: ../src/connectors/sunpeak/batch/b03_sunpeak_bronze2silver.py
+            source: WORKSPACE
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --select dpx --vars '{"dpx_catalog":"${var.dpx_catalog}"}' --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select tag:sunpeak_batch --vars '{"globex_catalog":"${var.globex_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files
+            catalog: ${var.globex_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+        - task_key: b10_connection_status
+          depends_on:
+            - task_key: b04_silver2gold
+          notebook_task:
+            notebook_path: ../src/shared/b10_update_batch_connection_metadata.py
+            base_parameters:
+              catalog_name: ${var.globex_catalog}
+              connector: sunpeak_api
+            source: WORKSPACE
+      tags:
+        client: globex
+        brand: sunpeak
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.globex_catalog}
+        - name: secret_scope
+          default: globex_sunpeak_api_creds
+        - name: volume_name
+          default: sunpeak_inverters_batch
+        - name: bronze_table_name
+          default: sunpeak_7f181dc8_7c_batch
+        - name: silver_table_name
+          default: sunpeak_7f181dc8_7c_batch
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    globex_voltcore_batch_job:
+      name: globex voltcore batch job
+      description: >-
+        Batch pipeline for Voltcore inverters (Sites 37151 & 407966):
+
+        1. b01_api2land: Fetches system-overview to get VE.Bus System productCode, then extracts CSV data from Voltcore API and writes to land volume with filename pattern voltcore_{site_id}_{product_code}_{timestamp}.csv.
+
+        2. b02_land2bronze: Processes CSV files, extracts product_code from filename, unpivots signals, and creates device-specific bronze tables (voltcore_2623_batch, voltcore_2611_batch).
+
+        3. b03_bronze2silver: Pivots bronze data back to wide format, reads latest device metadata JSON from land volume (instead of querying gold layer), enriches with model/series/sku fields for silver tables.
+
+        4. b04_silver2gold: Applies business logic via dbt, calculates power/energy metrics, and aggregates to 15-minute intervals in gold layer (f_voltcore_inverter_2623_batch, f_voltcore_inverter_2611_batch, f_voltcore_battery_2623_batch, f_voltcore_battery_2611_batch).
+
+        5. b05_voltcore_devices: Writes device(s) source data in original format to land and writes transformed data in a dimension table in the gold layer.
+
+        6. b10_update_batch_connection_metadata: Reads connection_config rows for connector=voltcore_api and appends connection status records to metadata.connection_status for historical tracking.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      trigger:
+        pause_status: PAUSED
+        periodic:
+          interval: 1
+          unit: DAYS
+      tasks:
+        - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/voltcore/batch/b01_voltcore_api2land.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+        - task_key: b05_voltcore_devices
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/voltcore/batch/b05_voltcore_devices.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/connectors/voltcore/batch/b02_voltcore_land2bronze.py
+            source: WORKSPACE
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+            - task_key: b05_voltcore_devices
+          notebook_task:
+            notebook_path: ../src/connectors/voltcore/batch/b03_voltcore_bronze2silver.py
+            source: WORKSPACE
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --select dpx --vars '{"dpx_catalog":"${var.dpx_catalog}"}' --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select tag:voltcore_batch --vars '{"globex_catalog":"${var.globex_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/developer@example.com/.bundle/dataplatformx-data/${bundle.target}/files
+            catalog: ${var.globex_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+        - task_key: b10_connection_status
+          depends_on:
+            - task_key: b04_silver2gold
+          notebook_task:
+            notebook_path: ../src/shared/b10_update_batch_connection_metadata.py
+            base_parameters:
+              catalog_name: ${var.globex_catalog}
+              connector: voltcore_api
+            source: WORKSPACE
+      tags:
+        client: globex
+        brand: voltcore
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.globex_catalog}
+        - name: secret_scope
+          default: globex_voltcore_api_credentials
+        - name: volume_name
+          default: voltcore_inverters_batch
+        - name: bronze_table_name_2623
+          default: voltcore_2623_batch
+        - name: bronze_table_name_2611
+          default: voltcore_2611_batch
+        - name: silver_table_name_2623
+          default: voltcore_2623_batch
+        - name: silver_table_name_2611
+          default: voltcore_2611_batch
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    globex_sites_and_spaces_metadata_job:
+      name: globex sites and spaces metadata job
+      description: >-
+        Weekly metadata refresh job for GLOBEX sites and spaces (Haystack ontology compliance).
+
+        This job:
+        1. Fetches site metadata from Voltcore, Sunpeak, and Solarflow APIs
+        2. Merges data into dim_site table (Haystack-compliant schema)
+        3. Generates default spaces for each site (one space per site)
+        4. Merges data into dim_space table (Haystack-compliant schema)
+
+        Runs weekly on Mondays at 00:00 UTC to keep site and space reference data fresh.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      schedule:
+        quartz_cron_expression: 0 0 0 ? * MON
+        timezone_id: UTC
+        pause_status: PAUSED
+      tasks:
+        - task_key: refresh_sites_and_spaces
+          notebook_task:
+            notebook_path: ../src/clients/globex/globex_sites_and_spaces_metadata.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+      tags:
+        client: globex
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: metadata
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.globex_catalog}
+      performance_target: PERFORMANCE_OPTIMIZED
+
+# Production target-specific overrides for pause/unpause control
+targets:
+  dpx-prod:
+    resources:
+      jobs:
+        globex_solarflow_batch_job:
+          trigger:
+            pause_status: PAUSED
+
+        globex_sunpeak_batch_job:
+          trigger:
+            pause_status: PAUSED
+
+        globex_voltcore_batch_job:
+          trigger:
+            pause_status: PAUSED

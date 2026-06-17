@@ -1,0 +1,104 @@
+version: 2
+
+sources:
+  - name: acme
+    database: "{{ var('acme_catalog', 'acme_dev') }}"
+    schema: silver
+    tables:
+      - name: tracksys_batch
+  - name: acme_silver
+    database: "{{ var('acme_catalog', 'acme_dev') }}"
+    schema: silver
+    tables:
+      - name: wattflow_dap_batch
+        description: "Silver layer Wattflow meter measurements with Haystack ontology transformations"
+        columns:
+          - name: dapId
+          - name: ean
+          - name: key
+          - name: timestamp
+          - name: measurementDate
+          - name: aggregationLevel
+          - name: acEnergyImportLow
+          - name: acEnergyImportNormal
+          - name: acEnergyExportLow
+          - name: acEnergyExportNormal
+          - name: acReactiveEnergyImportLow
+          - name: acReactiveEnergyImportNormal
+          - name: acReactiveEnergyExportLow
+          - name: acReactiveEnergyExportNormal
+          - name: isPeakImport
+          - name: isPeakExport
+          - name: silverProcessingTimestamp
+  - name: acme_gold
+    database: "{{ var('acme_catalog', 'acme_dev') }}"
+    schema: gold
+    tables:
+      - name: d_wattflow_sites
+        description: "Dimension table for Wattflow meter sites with surrogate keys"
+  - name: globex
+    database: "{{ var('globex_catalog', 'globex_dev') }}"
+    schema: silver
+    tables:
+      - name: voltcore_2623_batch
+      - name: voltcore_2611_batch
+      - name: sunpeak_7f181dc8_7c_batch
+      - name: solarflow_mjp0e6b0t5_batch
+  - name: globex_gold
+    database: "{{ var('globex_catalog', 'globex_dev') }}"
+    schema: gold
+    tables:
+      - name: d_inverters
+        description: "Dimension table for all inverters across connectors (Voltcore, Sunpeak, Solarflow)"
+      - name: d_batteries
+        description: "Dimension table for all battery monitors/BMS (Voltcore)"
+      - name: dim_site
+        description: "Dimension table for sites"
+      - name: dim_space
+        description: "Dimension table for spaces"
+
+  - name: ecosphere_silver
+    database: "{{ var('acme_catalog', 'acme_dev') }}"
+    schema: silver
+    tables:
+      - name: ecosphere_batch_econnection_history
+        description: "Electricity 15-minute interval history (all energy methods pivoted)"
+      - name: ecosphere_batch_hconnection_history
+        description: "Heat 15-minute interval history"
+      - name: ecosphere_batch_gconnection_history
+        description: "Gas 15-minute interval history"
+      - name: ecosphere_batch_waterconnection_history
+        description: "Water 15-minute interval history"
+      - name: ecosphere_batch_fcr_history
+        description: "Frequency Containment Reserve 15-minute interval history"
+      - name: ecosphere_batch_econnection_meterreadings
+        description: "Electricity cumulative meter readings"
+      - name: ecosphere_batch_hconnection_meterreadings
+        description: "Heat cumulative meter readings"
+      - name: ecosphere_batch_waterconnection_meterreadings
+        description: "Water cumulative meter readings"
+      - name: ecosphere_batch_battery
+        description: "Battery state of charge point-in-time values"
+      - name: ecosphere_batch_solar_irradiance
+        description: "Solar irradiance point-in-time values"
+      - name: ecosphere_batch_ev_charging_station
+        description: "EV charging station socket status"
+
+  - name: ecosphere_gold
+    database: "{{ var('acme_catalog', 'acme_dev') }}"
+    schema: gold
+    tables:
+      - name: d_ecosphere_buildings
+        description: "ESDL-aligned dimension table for Ecosphere Building objects"
+      - name: d_ecosphere_econnections
+        description: "ESDL-aligned dimension table for Ecosphere EConnection objects"
+      - name: d_ecosphere_hconnections
+        description: "ESDL-aligned dimension table for Ecosphere HConnection objects"
+      - name: d_ecosphere_gconnections
+        description: "ESDL-aligned dimension table for Ecosphere GConnection objects"
+      - name: d_ecosphere_waterconnections
+        description: "ESDL-aligned dimension table for Ecosphere WaterConnection objects"
+      - name: d_ecosphere_batteries
+        description: "ESDL-aligned dimension table for Ecosphere Battery objects"
+      - name: d_ecosphere_ev_charging_stations
+        description: "ESDL-aligned dimension table for Ecosphere EVChargingStation objects"
