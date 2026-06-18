@@ -1,4 +1,5 @@
 # lmx-data
+<img width="904" height="462" alt="CleanShot 2026-06-18 at 10 16 12" src="https://github.com/user-attachments/assets/0ec2cfa3-a2fc-4379-9ac3-3586a6539546" />
 
 This is the **data layer** of **lmx**, a reference data platform on Databricks. It ingests telemetry from pluggable connectors, transforms it through a medallion architecture (land → bronze → silver → gold), and serves the curated data and connection metadata to a range of downstream consumers:
 
