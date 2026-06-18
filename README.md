@@ -15,7 +15,7 @@ Two example connectors ship in this repo — **AMPCORE** and **Smartnode** — b
 
 **lmx** is split into two repos along one clean boundary: **[lmx-infra](https://github.com/your-account/lmx-infra) owns *where things live*; this repo (`lmx-data`) owns *what runs in them*.**
 
-`lmx-infra` uses **Terraform** (Infrastructure as Code) to provision the foundation — AWS resources, Databricks workspaces, Unity Catalog catalogs/schemas and grants, SQL warehouses, and the Lakebase serving layer. This repo assumes those already exist and never creates them (hence the "never `CREATE SCHEMA` from this repo" rule); it deploys the connectors, transforms, and serving pipelines with **Databricks Asset Bundles (DABs)**.
+`lmx-infra` uses **Terraform** (Infrastructure as Code) to provision the foundation — AWS resources, Databricks workspaces, Unity Catalog catalogs/schemas and grants, SQL warehouses, and the Lakebase serving layer. This repo assumes those already exist and never creates them (hence the "never `CREATE SCHEMA` from this repo" rule); it deploys the connectors, transforms, and serving pipelines with **Declarative Automation Bundles (DABs)**.
 
 Keeping them separate buys:
 
@@ -28,7 +28,7 @@ Keeping them separate buys:
 
 - **Databricks** — workspace, Unity Catalog, jobs, SQL warehouses
 - **Databricks Asset Bundles (DABs)** — IaC for jobs, pipelines, and environments (`databricks.yml`, `resources/`)
-- **Lakeflow Declarative Pipelines (LDP / SDP)** — `@dp.table` notebooks + `*.sql` gold for each connector
+- **Lakeflow Spark Declarative Pipelines (SDP)** — `@dp.table` notebooks + `*.sql` gold for each connector
 - **PySpark / Spark Structured Streaming** — bronze/silver transforms, Auto Loader
 - **Delta Lake** with **liquid clustering (`CLUSTER BY AUTO`)** as the default partitioning strategy
 - **Unity Catalog** — multi-tenant catalogs per client/env (`acme_dev/prod`, `lmx_dev/prod`)
