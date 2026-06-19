@@ -14,18 +14,18 @@
 
 -- COMMAND ----------
 
-CREATE OR REFRESH MATERIALIZED VIEW gold.d_smartnode_econnections (
-  sk_econnection           STRING    COMMENT 'EConnection id — sha2-256 on accountId|energyassetId|EConnection',
-  original_id_in_source      STRING    COMMENT 'EConnection.original_id_in_source — composite accountId|energyassetId',
-  asset_type               STRING    COMMENT 'EConnection.asset_type — always ''Smartnode EConnection''',
-  manufacturer            STRING    COMMENT 'EConnection.manufacturer — always ''Smartnode''',
-  account_id              INT       COMMENT 'Smartnode account identifier (natural key component)',
-  energyasset_id          INT       COMMENT 'Smartnode energy asset identifier (natural key component)',
-  validated               TIMESTAMP COMMENT 'Last validated timestamp for this asset per the Smartnode API',
-  snapshot_date           DATE      COMMENT 'Date of the metadata snapshot from which this row was derived',
+CREATE OR REFRESH MATERIALIZED VIEW gold.d_benext_econnections (
+  sk_econnection            STRING    COMMENT 'ESDL EConnection id — sha2-256 on accountId|energyassetId|EConnection',
+  original_id_in_source     STRING    COMMENT 'ESDL EConnection.original_id_in_source — composite accountId|energyassetId',
+  asset_type                STRING    COMMENT 'ESDL EConnection.asset_type — always ''BeNext EConnection''',
+  manufacturer              STRING    COMMENT 'ESDL EConnection.manufacturer — always ''BeNext''',
+  account_id                INT       COMMENT 'BeNext account identifier (natural key component)',
+  energyasset_id            INT       COMMENT 'BeNext energy asset identifier (natural key component)',
+  validated                 TIMESTAMP COMMENT 'Last validated timestamp for this asset per the BeNext API',
+  snapshot_date             DATE      COMMENT 'Date of the metadata snapshot from which this row was derived',
   gold_processing_timestamp TIMESTAMP COMMENT 'Timestamp when this row was written to gold',
   CONSTRAINT valid_sk            EXPECT (sk_econnection IS NOT NULL) ON VIOLATION FAIL UPDATE,
-  CONSTRAINT valid_snapshot_date EXPECT (snapshot_date IS NOT NULL)  ON VIOLATION DROP ROW
+  CONSTRAINT valid_snapshot_date EXPECT (snapshot_date IS NOT NULL) ON VIOLATION DROP ROW
 )
 CLUSTER BY AUTO
 COMMENT
@@ -60,18 +60,18 @@ WHERE rn = 1
 
 -- COMMAND ----------
 
-CREATE OR REFRESH MATERIALIZED VIEW gold.d_smartnode_pvinstallations (
-  sk_pvinstallation        STRING    COMMENT 'PVInstallation id — sha2-256 on accountId|energyassetId|PVInstallation',
-  original_id_in_source      STRING    COMMENT 'PVInstallation.original_id_in_source — composite accountId|energyassetId',
-  asset_type               STRING    COMMENT 'PVInstallation.asset_type — always ''Smartnode PVInstallation''',
-  manufacturer            STRING    COMMENT 'PVInstallation.manufacturer — always ''Smartnode''',
-  account_id              INT       COMMENT 'Smartnode account identifier (natural key component)',
-  energyasset_id          INT       COMMENT 'Smartnode energy asset identifier (natural key component)',
-  validated               TIMESTAMP COMMENT 'Last validated timestamp for this asset per the Smartnode API',
-  snapshot_date           DATE      COMMENT 'Date of the metadata snapshot from which this row was derived',
+CREATE OR REFRESH MATERIALIZED VIEW gold.d_benext_pvinstallations (
+  sk_pvinstallation         STRING    COMMENT 'ESDL PVInstallation id — sha2-256 on accountId|energyassetId|PVInstallation',
+  original_id_in_source     STRING    COMMENT 'ESDL PVInstallation.original_id_in_source — composite accountId|energyassetId',
+  asset_type                STRING    COMMENT 'ESDL PVInstallation.asset_type — always ''BeNext PVInstallation''',
+  manufacturer              STRING    COMMENT 'ESDL PVInstallation.manufacturer — always ''BeNext''',
+  account_id                INT       COMMENT 'BeNext account identifier (natural key component)',
+  energyasset_id            INT       COMMENT 'BeNext energy asset identifier (natural key component)',
+  validated                 TIMESTAMP COMMENT 'Last validated timestamp for this asset per the BeNext API',
+  snapshot_date             DATE      COMMENT 'Date of the metadata snapshot from which this row was derived',
   gold_processing_timestamp TIMESTAMP COMMENT 'Timestamp when this row was written to gold',
   CONSTRAINT valid_sk            EXPECT (sk_pvinstallation IS NOT NULL) ON VIOLATION FAIL UPDATE,
-  CONSTRAINT valid_snapshot_date EXPECT (snapshot_date IS NOT NULL)     ON VIOLATION DROP ROW
+  CONSTRAINT valid_snapshot_date EXPECT (snapshot_date IS NOT NULL) ON VIOLATION DROP ROW
 )
 CLUSTER BY AUTO
 COMMENT
@@ -93,15 +93,15 @@ WITH deduped AS (
 )
 SELECT
     sha2(concat_ws('|', cast(accountId AS STRING), cast(energyassetId AS STRING), 'PVInstallation'), 256)
-                            AS sk_pvinstallation,
+                               AS sk_pvinstallation,
     concat_ws('|', cast(accountId AS STRING), cast(energyassetId AS STRING))
-                            AS original_id_in_source,
+                               AS original_id_in_source,
     'Smartnode PVInstallation' AS asset_type,
     'Smartnode'                AS manufacturer,
-    accountId               AS account_id,
-    energyassetId           AS energyasset_id,
-    validated,
-    snapshotDate            AS snapshot_date,
-    current_timestamp()     AS gold_processing_timestamp
+    accountId                  AS account_id,
+    energyassetId              AS energyasset_id,
+    validated,   
+    snapshotDate               AS snapshot_date,
+    current_timestamp()        AS gold_processing_timestamp
 FROM deduped
 WHERE rn = 1
